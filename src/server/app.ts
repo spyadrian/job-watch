@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import type { Clock } from "./clock.ts";
+import { TransitionError } from "../shared/job-lifecycle.ts";
 import { resetDatabase, type Database } from "./db.ts";
+import { RequestError } from "./errors.ts";
 import { createRefresher } from "./refresh.ts";
 import { registerCompanyRoutes } from "./routes/companies.ts";
 import { registerRefreshRoutes } from "./routes/refresh.ts";
@@ -47,7 +49,10 @@ export function createApp(deps: AppDeps): Hono {
   // Keep this catch-all last: unknown API routes answer JSON, never the SPA page.
   api.all("*", (c) => c.json({ error: `Not found: ${c.req.method} ${c.req.path}` }, 404));
 
+  // Refused requests answer their own status and message; anything else is a 500.
   app.onError((err, c) => {
+    if (err instanceof RequestError) return c.json({ error: err.message }, err.status);
+    if (err instanceof TransitionError) return c.json({ error: err.message }, 409);
     console.error(err);
     return c.json({ error: err.message || "Unexpected server error" }, 500);
   });
