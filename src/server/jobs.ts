@@ -1,9 +1,10 @@
 // Job lifecycle storage: listing Jobs and applying status changes. The status
 // rules themselves are the pure shared module; routes live in routes/jobs.ts.
-import type { Database } from "./db.ts";
+import { inTransaction, type Database } from "./db.ts";
 import { RequestError } from "./errors.ts";
 import { jobStatuses, restore, transition, type Transition } from "../shared/job-lifecycle.ts";
 import type { Job, JobAction, JobStatus } from "../shared/types.ts";
+import type { NormalizedJob } from "./sources/index.ts";
 
 export { jobActions } from "../shared/job-lifecycle.ts";
 
@@ -44,17 +45,35 @@ function store(db: Database, id: number, next: Transition): Job | null {
 
 /** Mark all as seen: the given Jobs that are still Unseen become Seen, in one transaction; returns them. */
 export function markAllSeen(db: Database, ids: number[]): Job[] {
-  const update = db.prepare("UPDATE job SET status = 'seen', was_saved = 0 WHERE id = ? AND status = 'unseen'");
-  const changed: number[] = [];
-  db.exec("BEGIN");
-  try {
-    for (const id of new Set(ids)) if (update.run(id).changes > 0) changed.push(id);
-    db.exec("COMMIT");
-  } catch (err) {
-    db.exec("ROLLBACK");
-    throw err;
-  }
-  return changed.map((id) => getJob(db, id)!);
+  return inTransaction(db, () =>
+    [...new Set(ids)].flatMap((id) => {
+      const job = getJob(db, id);
+      if (job?.status !== "unseen") return [];
+      const seen = store(db, id, transition(job, "seen"));
+      return seen ? [seen] : [];
+    }),
+  );
+}
+
+/** The Company a Job is stored under: its id and current name. */
+export interface JobOwner {
+  id: number;
+  name: string;
+}
+
+/**
+ * Stores a Job read from the Company's Source for the first time: Unseen, first
+ * fetched `now`. Returns false when the Company already has it.
+ */
+export function insertJob(db: Database, owner: JobOwner, job: NormalizedJob, now: string): boolean {
+  const { changes } = db
+    .prepare(
+      `INSERT INTO job (company_id, company_name, source_job_id, title, url, locations, published_at, first_fetched_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (company_id, source_job_id) DO NOTHING`,
+    )
+    .run(owner.id, owner.name, job.sourceJobId, job.title, job.url, JSON.stringify(job.locations), job.publishedAt, now);
+  return changes > 0;
 }
 
 /** A status and flag a Job can be in: the flag only ever goes with Applied. */

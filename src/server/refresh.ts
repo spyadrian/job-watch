@@ -4,7 +4,8 @@
 import { becomeOutdated } from "../shared/job-lifecycle.ts";
 import type { JobStatus, RefreshEvent, RefreshSummary, SourceType } from "../shared/types.ts";
 import type { AppDeps } from "./app.ts";
-import type { Database } from "./db.ts";
+import { inTransaction, type Database } from "./db.ts";
+import { insertJob } from "./jobs.ts";
 import { adapterFor, type NormalizedJob } from "./sources/index.ts";
 
 /** How many Sources are read at the same time. */
@@ -160,13 +161,11 @@ interface StoredJob {
  */
 function storeRead(db: Database, companyId: number, jobs: NormalizedJob[], now: string): { new: number; outdated: number } {
   const changes = { new: 0, outdated: 0 };
-  db.exec("BEGIN");
-  try {
-    const company = db.prepare("SELECT name FROM company WHERE id = ?").get(companyId) as { name: string } | undefined;
-    if (!company) {
-      db.exec("ROLLBACK");
-      return changes;
-    }
+  return inTransaction(db, () => {
+    const company = db.prepare("SELECT id, name FROM company WHERE id = ?").get(companyId) as
+      | { id: number; name: string }
+      | undefined;
+    if (!company) return changes;
     const stored = new Map(
       (
         db
@@ -179,19 +178,10 @@ function storeRead(db: Database, companyId: number, jobs: NormalizedJob[], now: 
     const update = db.prepare(
       "UPDATE job SET title = ?, url = ?, locations = ?, published_at = ?, outdated = 0 WHERE id = ?",
     );
-    const insert = db.prepare(
-      `INSERT INTO job (company_id, company_name, source_job_id, title, url, locations, published_at, first_fetched_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    );
     for (const job of read.values()) {
-      const locations = JSON.stringify(job.locations);
       const existing = stored.get(job.sourceJobId);
-      if (existing) {
-        update.run(job.title, job.url, locations, job.publishedAt, existing.id);
-      } else {
-        insert.run(companyId, company.name, job.sourceJobId, job.title, job.url, locations, job.publishedAt, now);
-        changes.new++;
-      }
+      if (existing) update.run(job.title, job.url, JSON.stringify(job.locations), job.publishedAt, existing.id);
+      else if (insertJob(db, company, job, now)) changes.new++;
     }
 
     const remove = db.prepare("DELETE FROM job WHERE id = ?");
@@ -205,10 +195,6 @@ function storeRead(db: Database, companyId: number, jobs: NormalizedJob[], now: 
     }
 
     db.prepare("UPDATE company SET last_error = NULL, last_error_at = NULL WHERE id = ?").run(companyId);
-    db.exec("COMMIT");
     return changes;
-  } catch (err) {
-    db.exec("ROLLBACK");
-    throw err;
-  }
+  });
 }

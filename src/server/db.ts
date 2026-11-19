@@ -81,17 +81,25 @@ export function resetDatabase(db: Database): void {
   migrate(db);
 }
 
+/** Runs `work` in one transaction: committed when it returns, rolled back when it throws. */
+export function inTransaction<T>(db: Database, work: () => T): T {
+  db.exec("BEGIN");
+  try {
+    const result = work();
+    db.exec("COMMIT");
+    return result;
+  } catch (err) {
+    db.exec("ROLLBACK");
+    throw err;
+  }
+}
+
 function migrate(db: Database): void {
   const row = db.prepare("PRAGMA user_version").get() as { user_version: number };
   for (let v = row.user_version; v < migrations.length; v++) {
-    db.exec("BEGIN");
-    try {
+    inTransaction(db, () => {
       db.exec(migrations[v]!);
       db.exec(`PRAGMA user_version = ${v + 1}`);
-      db.exec("COMMIT");
-    } catch (err) {
-      db.exec("ROLLBACK");
-      throw err;
-    }
+    });
   }
 }

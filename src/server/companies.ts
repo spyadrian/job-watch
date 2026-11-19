@@ -1,6 +1,9 @@
-import type { Company, SourceRef, SourceType } from "../shared/types.ts";
+import type { Company, JobStatus, SourceRef, SourceType } from "../shared/types.ts";
+import { becomeOutdated } from "../shared/job-lifecycle.ts";
 import type { AppDeps } from "./app.ts";
+import { inTransaction, type Database } from "./db.ts";
 import { RequestError } from "./errors.ts";
+import { insertJob } from "./jobs.ts";
 import { adapterFor, type NormalizedJob } from "./sources/index.ts";
 
 /** Following or renaming a Company was refused: blank name, already followed, unreadable Source… */
@@ -35,35 +38,28 @@ export async function followCompany(
 
   const { db } = deps;
   const now = deps.clock.now().toISOString();
-  db.exec("BEGIN");
-  try {
+  return inTransaction(db, () => {
     refuseIfFollowed(source, deps); // the read was async: check again inside the transaction
     const { id } = db
       .prepare("INSERT INTO company (name, source_type, source_key, created_at) VALUES (?, ?, ?, ?) RETURNING id")
       .get(name, source.type, source.key, now) as { id: number };
-    const insertJob = db.prepare(
-      `INSERT INTO job (company_id, company_name, source_job_id, title, url, locations, published_at, first_fetched_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT (company_id, source_job_id) DO NOTHING`,
-    );
-    for (const job of jobs) {
-      insertJob.run(id, name, job.sourceJobId, job.title, job.url, JSON.stringify(job.locations), job.publishedAt, now);
-    }
-    db.exec("COMMIT");
+    for (const job of jobs) insertJob(db, { id, name }, job, now);
     return {
       company: { id, name, source: { type: source.type, key: source.key }, sourceLabel: adapter.label, createdAt: now, lastError: null },
       jobCount: jobs.length,
     };
-  } catch (err) {
-    db.exec("ROLLBACK");
-    throw err;
-  }
+  });
+}
+
+/** The Company that follows this Source, if any. */
+export function companyFollowing(db: Database, source: SourceRef): { id: number; name: string } | undefined {
+  return db
+    .prepare("SELECT id, name FROM company WHERE source_type = ? AND source_key = ?")
+    .get(source.type, source.key) as { id: number; name: string } | undefined;
 }
 
 function refuseIfFollowed(source: SourceRef, { db }: AppDeps): void {
-  const followed = db
-    .prepare("SELECT name FROM company WHERE source_type = ? AND source_key = ?")
-    .get(source.type, source.key) as { name: string } | undefined;
+  const followed = companyFollowing(db, source);
   if (followed) throw new CompanyRequestError(`Already following ${followed.name}`, 409);
 }
 
@@ -127,20 +123,17 @@ export function removeCompany(id: number, { db }: Pick<AppDeps, "db">): void {
   inTransaction(db, () => {
     const company = db.prepare("SELECT name FROM company WHERE id = ?").get(id) as { name: string } | undefined;
     if (!company) throw new CompanyNotFoundError();
-    db.prepare("DELETE FROM job WHERE company_id = ? AND status IN ('unseen', 'seen')").run(id);
-    db.prepare("UPDATE job SET outdated = 1, company_name = ? WHERE company_id = ?").run(company.name, id);
+    // Its Jobs are no longer in a followed Source: the same rule as a Job gone from its Source.
+    const jobs = db.prepare("SELECT id, status FROM job WHERE company_id = ?").all(id) as unknown as {
+      id: number;
+      status: JobStatus;
+    }[];
+    const remove = db.prepare("DELETE FROM job WHERE id = ?");
+    const keep = db.prepare("UPDATE job SET outdated = 1, company_name = ? WHERE id = ?");
+    for (const job of jobs) {
+      if ("deleted" in becomeOutdated({ status: job.status, wasSaved: false, outdated: false })) remove.run(job.id);
+      else keep.run(company.name, job.id);
+    }
     db.prepare("DELETE FROM company WHERE id = ?").run(id); // ON DELETE SET NULL detaches the kept Jobs
   });
-}
-
-function inTransaction<T>(db: AppDeps["db"], work: () => T): T {
-  db.exec("BEGIN");
-  try {
-    const result = work();
-    db.exec("COMMIT");
-    return result;
-  } catch (err) {
-    db.exec("ROLLBACK");
-    throw err;
-  }
 }
