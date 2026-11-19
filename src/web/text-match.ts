@@ -1,45 +1,42 @@
 // Accent- and case-insensitive text matching, shared by the Filter and search.
 
-/** Lower case with accents removed: "Genève" → "geneve". */
+/** `s` without accents, lower-cased: "Genève" → "geneve". */
 export function fold(s: string): string {
-  return folded(s).text;
+  return s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 }
 
 /**
- * Every place `needle` occurs in `text`, ignoring accents and case, as
- * [start, end) ranges on the ORIGINAL text (non-overlapping, left to right).
+ * Every non-overlapping occurrence of `needle` in `text`, ignoring accents and case,
+ * as [start, end) ranges on the ORIGINAL text.
  */
 export function findRanges(text: string, needle: string): Array<[number, number]> {
-  const n = fold(needle);
-  if (n === "") return [];
-  const { text: hay, origin } = folded(text);
+  const target = fold(needle);
+  if (target === "") return [];
+
+  // Fold one code point at a time, remembering where each folded char came from.
+  let folded = "";
+  const startOf: number[] = [];
+  const endOf: number[] = [];
+  let i = 0;
+  for (const ch of text) {
+    const f = fold(ch);
+    // A lone combining mark folds to nothing: keep it with the char before it.
+    if (f === "" && endOf.length > 0) endOf[endOf.length - 1] = i + ch.length;
+    for (let k = 0; k < f.length; k++) {
+      startOf.push(i);
+      endOf.push(i + ch.length);
+    }
+    folded += f;
+    i += ch.length;
+  }
+
   const ranges: Array<[number, number]> = [];
   let from = 0;
-  for (let at = hay.indexOf(n, from); at !== -1; at = hay.indexOf(n, from)) {
-    const last = at + n.length - 1;
-    let end = origin[last]! + charLength(text, origin[last]!);
-    // Keep the accents that belong to the last matched letter.
-    while (end < text.length && /\p{M}/u.test(text[end]!)) end++;
-    ranges.push([origin[at]!, end]);
-    from = at + n.length;
+  for (;;) {
+    const at = folded.indexOf(target, from);
+    if (at === -1) break;
+    ranges.push([startOf[at]!, endOf[at + target.length - 1]!]);
+    from = at + target.length;
   }
   return ranges;
-}
-
-/** The folded text, with the index in the original of the character each folded unit comes from. */
-function folded(s: string): { text: string; origin: number[] } {
-  let text = "";
-  const origin: number[] = [];
-  for (let i = 0; i < s.length; ) {
-    const char = String.fromCodePoint(s.codePointAt(i)!);
-    const f = char.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
-    text += f;
-    for (let k = 0; k < f.length; k++) origin.push(i);
-    i += char.length;
-  }
-  return { text, origin };
-}
-
-function charLength(s: string, i: number): number {
-  return String.fromCodePoint(s.codePointAt(i)!).length;
 }

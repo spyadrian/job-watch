@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "re
 import type { Job } from "../shared/types.ts";
 import { call } from "./api.ts";
 import { FollowCompany } from "./follow-company.tsx";
+import { useGlobalKeys } from "./global-keys.ts";
 import { emptyFilter, jobRows } from "./job-list.ts";
 import { JobListView } from "./job-list-view.tsx";
 import { StatusToast, useStatusChanges } from "./job-status.tsx";
+import { SearchBox } from "./search-box.tsx";
 import { HeaderShortcuts, ShortcutsSection, useShortcuts } from "./shortcuts.tsx";
 
 type TabId = "inbox" | "saved" | "applied" | "seen" | "companies";
@@ -24,6 +26,19 @@ export function App() {
   const shortcuts = useShortcuts();
   const jobs = useJobs();
   const status = useStatusChanges(jobs.setJobs);
+  const [query, setQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useGlobalKeys({
+    "/": () => {
+      if (!searchRef.current) return false;
+      searchRef.current.focus();
+    },
+    Escape: () => {
+      if (query === "") return false;
+      setQuery("");
+    },
+  });
 
   // WAI-ARIA tabs pattern: arrow keys move between tabs, Home/End jump.
   function onTabKeyDown(e: KeyboardEvent<HTMLButtonElement>, index: number) {
@@ -91,7 +106,15 @@ export function App() {
                   {jobs.loadError}
                 </p>
               )}
-              <JobListView key={active} jobs={jobs.jobs} list={active} empty={current.empty} onAct={status.act} />
+              <SearchBox ref={searchRef} value={query} onChange={setQuery} />
+              <JobListView
+                key={`${active}:${query}`}
+                jobs={jobs.jobs}
+                list={active}
+                query={query}
+                empty={current.empty}
+                onAct={status.act}
+              />
             </>
           )}
         </div>

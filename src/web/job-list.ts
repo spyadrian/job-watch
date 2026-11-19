@@ -2,22 +2,29 @@
 // search rule; the UI only paginates and renders its output.
 import type { Filter, Job, JobStatus } from "../shared/types.ts";
 import { isBoosted, keywordHighlights, passesFilter } from "./filter.ts";
+import { matchesSearch, searchHighlights, searchWords } from "./search.ts";
 
 export type { Filter, Job, JobStatus };
 
 export type ListKind = "inbox" | "saved" | "applied" | "seen";
 
-/** A character range [start, end) of a text to highlight. */
+/** A character range [start, end) of one field to highlight. */
 export interface Highlight {
   start: number;
   end: number;
   kind: "required" | "boosted" | "search";
 }
 
+/** Highlights per field: title, Company, and one array per location (same order as `job.locations`). */
+export interface RowHighlights {
+  title: Highlight[];
+  company: Highlight[];
+  locations: Highlight[][];
+}
+
 export interface JobRow {
   job: Job;
-  /** Ranges on the title, the Company name and each location (same order as job.locations). */
-  highlights: { title: Highlight[]; company: Highlight[]; locations: Highlight[][] };
+  highlights: RowHighlights;
 }
 
 export const emptyFilter: Filter = { cities: [], required: [], boosted: [], excluded: [] };
@@ -30,21 +37,22 @@ const statusOfList: Record<ListKind, JobStatus> = {
 };
 
 /** The ordered rows to show for one list. */
-export function jobRows(jobs: readonly Job[], list: ListKind, filter: Filter, _query: string): JobRow[] {
+export function jobRows(jobs: readonly Job[], list: ListKind, filter: Filter, query: string): JobRow[] {
   const inbox = list === "inbox";
+  const words = searchWords(query);
   return jobs
     .filter((job) => job.status === statusOfList[list])
     .filter((job) => !inbox || passesFilter(job, filter))
+    .filter((job) => matchesSearch(job, words))
     .map((job) => ({ job, boosted: inbox && isBoosted(job, filter) }))
     .sort((a, b) => Number(b.boosted) - Number(a.boosted) || compareJobs(a.job, b.job))
-    .map(({ job }) => ({
-      job,
-      highlights: {
-        title: keywordHighlights(job.title, filter),
-        company: [],
-        locations: job.locations.map(() => []),
-      },
-    }));
+    .map(({ job }) => {
+      const highlights = searchHighlights(job, words);
+      highlights.title = [...keywordHighlights(job.title, filter), ...highlights.title].sort(
+        (a, b) => a.start - b.start || a.end - b.end,
+      );
+      return { job, highlights };
+    });
 }
 
 const titleCollator = new Intl.Collator("en", { sensitivity: "base", numeric: true });
