@@ -1,7 +1,7 @@
 // Job lifecycle storage: listing Jobs and applying status changes. The status
 // rules themselves are the pure shared module; routes live in routes/jobs.ts.
 import type { Database } from "./db.ts";
-import { jobStatuses, transition } from "../shared/job-lifecycle.ts";
+import { jobStatuses, restore, transition, type Transition } from "../shared/job-lifecycle.ts";
 import type { Job, JobAction, JobStatus } from "../shared/types.ts";
 
 export { jobActions, TransitionError } from "../shared/job-lifecycle.ts";
@@ -27,7 +27,11 @@ export class JobNotFoundError extends Error {
 export function changeStatus(db: Database, id: number, action: JobAction): Job | null {
   const job = getJob(db, id);
   if (!job) throw new JobNotFoundError();
-  const next = transition(job, action);
+  return store(db, id, transition(job, action));
+}
+
+/** Stores the outcome of a status rule for one Job; returns the updated Job, or null when deleted. */
+function store(db: Database, id: number, next: Transition): Job | null {
   if ("deleted" in next) {
     db.prepare("DELETE FROM job WHERE id = ?").run(id);
     return null;
@@ -61,11 +65,14 @@ export function isValidState(status: unknown, wasSaved: unknown): status is JobS
   );
 }
 
-/** Undo: puts the stored Job back in the status (and flag) it had before the last change. */
-export function restoreStatus(db: Database, id: number, status: JobStatus, wasSaved: boolean): Job {
-  const { changes } = db.prepare("UPDATE job SET status = ?, was_saved = ? WHERE id = ?").run(status, wasSaved ? 1 : 0, id);
-  if (changes === 0) throw new JobNotFoundError();
-  return getJob(db, id)!;
+/**
+ * Undo: puts the stored Job back in the status (and flag) it had before the last change;
+ * returns it, or null when it was deleted (an Outdated Job going back to Unseen or Seen).
+ */
+export function restoreStatus(db: Database, id: number, status: JobStatus, wasSaved: boolean): Job | null {
+  const job = getJob(db, id);
+  if (!job) throw new JobNotFoundError();
+  return store(db, id, restore(job, { status, wasSaved }));
 }
 
 const selectJob =`SELECT j.*, COALESCE(c.name, j.company_name) AS display_company

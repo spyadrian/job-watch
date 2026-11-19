@@ -45,14 +45,18 @@ export function registerJobRoutes(api: Hono, deps: Pick<AppDeps, "db">): void {
     }
   });
 
-  /** Undo the last change: { status, wasSaved } (the Job's previous state) → { job }. */
+  /**
+   * Undo the last change: { status, wasSaved } (the Job's previous state) → { job },
+   * or { job: null, deleted: true } when an Outdated Job would go back to Unseen or Seen.
+   */
   api.post("/jobs/:id/undo", async (c) => {
     const body = (await c.req.json().catch(() => null)) as { status?: unknown; wasSaved?: unknown } | null;
     if (!isValidState(body?.status, body?.wasSaved)) {
       return c.json({ error: "Expected { status, wasSaved } with the Job's previous status." }, 400);
     }
     try {
-      return c.json({ job: restoreStatus(db, Number(c.req.param("id")), body.status, body.wasSaved as boolean) });
+      const job = restoreStatus(db, Number(c.req.param("id")), body.status, body.wasSaved as boolean);
+      return c.json(job ? { job } : { job: null, deleted: true });
     } catch (err) {
       if (err instanceof JobNotFoundError) return c.json({ error: err.message }, 404);
       throw err;

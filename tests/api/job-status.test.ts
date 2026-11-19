@@ -210,6 +210,36 @@ describe("undoing the last status change", () => {
     },
   );
 
+  it.each([
+    [[], "save", "unseen"],
+    [["seen"], "save", "seen"],
+    [[], "apply", "unseen"],
+  ] as const)(
+    "after %j then %s, deletes the Job once Outdated instead of putting it back in %s",
+    async (path, action, previous) => {
+      const t = await setup();
+      await reach(t, [...path, action]);
+      await t.makeOutdated();
+
+      const res = await t.request("POST", `/api/jobs/${t.id}/undo`, { status: previous, wasSaved: false });
+
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ job: null, deleted: true });
+      expect(await t.job()).toBeUndefined();
+    },
+  );
+
+  it("keeps an Outdated Job Outdated when undo puts it back in Saved", async () => {
+    const t = await setup();
+    await reach(t, ["save", "apply"]);
+    await t.makeOutdated();
+
+    const res = await t.request("POST", `/api/jobs/${t.id}/undo`, { status: "saved", wasSaved: false });
+
+    expect(res.status).toBe(200);
+    expect((await res.json()).job).toMatchObject({ status: "saved", wasSaved: false, outdated: true });
+  });
+
   it("answers 404 when the Job is gone", async () => {
     const t = await setup();
 

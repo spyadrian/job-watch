@@ -97,10 +97,13 @@ export function useStatusChanges(setJobs: Dispatch<SetStateAction<Job[]>>): Stat
     if (!change) return false;
     last.current = null;
     setToast(null);
-    call<{ job: Job }>("POST", `/api/jobs/${change.jobId}/undo`, { status: change.status, wasSaved: change.wasSaved })
+    call<{ job: Job | null; deleted?: boolean }>("POST", `/api/jobs/${change.jobId}/undo`, {
+      status: change.status,
+      wasSaved: change.wasSaved,
+    })
       .then((res) => {
         putJob(change.jobId, res.job);
-        show("Undone");
+        show(res.deleted ? "Removed: this Job is no longer published" : "Undone");
       })
       .catch((err: Error) => show(`Couldn't undo: ${err.message}`));
     return true;

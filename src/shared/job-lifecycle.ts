@@ -58,6 +58,15 @@ export function transition(from: JobState, action: JobAction): Transition {
 }
 
 /**
+ * Undo: puts the Job back in an earlier status and flag. An Outdated Job can't
+ * be Unseen or Seen, so going back there deletes it, as the status table does.
+ */
+export function restore(from: JobState, to: { status: JobStatus; wasSaved: boolean }): Transition {
+  if (from.outdated && (to.status === "unseen" || to.status === "seen")) return { deleted: true };
+  return { status: to.status, wasSaved: to.wasSaved };
+}
+
+/**
  * A Job no longer in its Source: an Unseen or Seen Job is deleted; a Saved or
  * Applied Job is kept, flagged Outdated.
  */
