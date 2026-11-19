@@ -30,6 +30,8 @@ interface WorkableJob {
 export const workable: SourceAdapter = {
   type: "workable",
   label: "Workable",
+  // Answers 200 with no Jobs for many names it doesn't know.
+  unknownKeyReadsEmpty: true,
 
   matchLink(url) {
     const segments = url.pathname.split("/").filter(Boolean);

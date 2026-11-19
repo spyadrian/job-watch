@@ -43,7 +43,9 @@ export async function discover(input: string, deps: DiscoveryDeps): Promise<Disc
   ]);
   const fromLink = byLink instanceof DiscoveryError ? [] : byLink.candidates;
   const seen = new Set(fromLink.map((c) => `${c.source.type}:${c.source.key}`));
-  const candidates = [...fromLink, ...byName.filter((c) => !seen.has(`${c.source.type}:${c.source.key}`))];
+  const merged = [...fromLink, ...byName.filter((c) => !seen.has(`${c.source.type}:${c.source.key}`))];
+  // A feed the site advertises is likely its news, not its Jobs, once an ATS board is known.
+  const candidates = merged.some((c) => c.source.type !== "feed") ? merged.filter((c) => c.source.type !== "feed") : merged;
   if (byLink instanceof DiscoveryError) {
     if (candidates.length === 0) throw byLink;
     return { candidates };
@@ -62,21 +64,31 @@ function hasScheme(text: string): boolean {
 
 /**
  * The Sources a link designates: a known job board or Job link, else whatever the
- * page it opens is (a feed) or embeds (boards, feeds). When the page can't be
- * opened, `unreachable` says why.
+ * page it opens is (a feed) or embeds (ATS boards). A page with no board leads to
+ * the boards found for the site's name, and only failing those, to the feeds the
+ * page advertises (often its news). When the page can't be opened, `unreachable` says why.
  */
 async function discoverByLink(url: URL, deps: DiscoveryDeps): Promise<DiscoverResponse> {
   const refs = sourcesFromLink(url);
-  let unreachable: string | undefined;
-  if (refs.length === 0) {
-    // No known link pattern: fetch the link once; an RSS/Atom answer is itself the Source.
-    const page = await fetchPage(url, deps);
-    if ("unreachable" in page) unreachable = page.unreachable;
-    else {
-      const feedRef = feedSourceFromPage(url, page.body);
-      refs.push(...(feedRef ? [feedRef] : sourcesInPage(url, page.body)));
-    }
+  if (refs.length > 0) return readCandidates(refs, deps);
+
+  // No known link pattern: fetch the link once; an RSS/Atom answer is itself the Source.
+  const page = await fetchPage(url, deps);
+  if ("body" in page) {
+    const feedRef = feedSourceFromPage(url, page.body);
+    if (feedRef) return readCandidates([feedRef], deps);
   }
+  const inPage = "body" in page ? sourcesInPage(url, page.body) : [];
+  const boards = inPage.filter((ref) => ref.type !== "feed");
+  if (boards.length > 0) return readCandidates(boards, deps);
+
+  const byName = await discoverByName(siteName(url), deps);
+  const found = byName.length > 0 ? { candidates: byName } : await readCandidates(inPage, deps);
+  return "unreachable" in page ? { candidates: found.candidates, unreachable: page.unreachable } : found;
+}
+
+/** Reads each Source once; fails only when every one of them failed. */
+async function readCandidates(refs: SourceRef[], deps: DiscoveryDeps): Promise<DiscoverResponse> {
   const results = await Promise.allSettled(refs.map((ref) => candidateFor(ref, deps)));
   const candidates = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
   const firstFailure = results.find((r) => r.status === "rejected");
@@ -85,7 +97,7 @@ async function discoverByLink(url: URL, deps: DiscoveryDeps): Promise<DiscoverRe
     if (err instanceof SourceError) throw new DiscoveryError(err.message, 502);
     throw err;
   }
-  return unreachable === undefined ? { candidates } : { candidates, unreachable };
+  return { candidates };
 }
 
 /**
@@ -107,16 +119,19 @@ async function discoverByName(name: string, deps: DiscoveryDeps): Promise<Candid
   return results.flatMap((r) => (r.status === "fulfilled" && r.value ? [r.value] : []));
 }
 
-/** "Café Zürich" → ["cafezurich", "cafe-zurich"]: lowercase, no accents, one word or hyphenated. */
+/**
+ * "Café Zürich" → ["cafezurich", "cafe-zurich", "cafe"]: lowercase, no accents, one word,
+ * hyphenated, and the first word alone ("Rai Institute" is `rai` on Lever). A dotted
+ * name is also tried as written ("mistral.ai" is an Ashby board).
+ */
 export function slugsForName(name: string): string[] {
-  const words = name
-    .normalize("NFKD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter(Boolean);
+  const plain = name.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().trim();
+  const words = plain.split(/[^a-z0-9]+/).filter(Boolean);
   if (words.length === 0) return [];
-  return [...new Set([words.join(""), words.join("-")])];
+  const slugs = [words.join(""), words.join("-")];
+  if (words.length > 1) slugs.push(words[0]!);
+  if (PLAUSIBLE_HOST.test(plain)) slugs.push(plain);
+  return [...new Set(slugs)];
 }
 
 /** Matches a link against every adapter's known link patterns. */
@@ -210,6 +225,9 @@ async function candidateFor(source: SourceRef, deps: DiscoveryDeps): Promise<Can
   };
 }
 
+/** A host name a person could type: labels, then a real-looking top-level domain. */
+const PLAUSIBLE_HOST = /^(?:[a-z0-9-]+\.)+(?:[a-z]{2,}|xn--[a-z0-9-]+)$/;
+
 function parseLink(input: string): URL | null {
   const text = input.trim();
   if (!text || /\s/.test(text)) return null;
@@ -219,7 +237,7 @@ function parseLink(input: string): URL | null {
   try {
     const url = new URL(schemeless ? `https://${text}` : text);
     if ((url.protocol !== "https:" && url.protocol !== "http:") || !url.hostname.includes(".")) return null;
-    if (schemeless && !/^(?:[a-z0-9-]+\.)+(?:[a-z]{2,}|xn--[a-z0-9-]+)$/.test(url.hostname)) return null;
+    if (schemeless && !PLAUSIBLE_HOST.test(url.hostname)) return null;
     return url;
   } catch {
     return null;
@@ -228,8 +246,13 @@ function parseLink(input: string): URL | null {
 
 /** "https://careers.acme.example/feed/" → "Acme": the site's main label (for a feed without a title). */
 function nameFromHost(link: string): string {
-  const host = new URL(link).hostname.replace(/^(?:www|careers|jobs|karriere)\./, "");
-  return nameFromKey(host.split(".")[0] ?? host);
+  return nameFromKey(siteName(new URL(link)));
+}
+
+/** "careers.acme.example" → "acme": the label that names the site. */
+function siteName(url: URL): string {
+  const host = url.hostname.replace(/^(?:www|careers|jobs|karriere)\./, "");
+  return host.split(".")[0] ?? host;
 }
 
 /** "acme-robotics" → "Acme Robotics" (fallback when the Source doesn't state a name). */

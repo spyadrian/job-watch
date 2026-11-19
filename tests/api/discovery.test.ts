@@ -43,14 +43,15 @@ describe("discovering a Company from its own careers page", () => {
     expect(requested.filter((url) => url === CAREERS)).toHaveLength(1);
   });
 
-  it("finds no candidate on a page with no board and no feed", async () => {
-    const { request, requested } = createTestApp({ sources: { ...boards, [CAREERS]: html("nothing") } });
+  it("finds no candidate on a page with no board and no feed, when no ATS knows the site's name", async () => {
+    const { request, requested } = createTestApp({ sources: { [CAREERS]: html("nothing") } });
 
     const res = await request("POST", "/api/companies/discover", { input: CAREERS });
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ candidates: [] });
-    expect(requested).toEqual([CAREERS]);
+    expect(requested.filter((url) => url === CAREERS)).toHaveLength(1);
+    for (const url of boardUrls("acme")) expect(requested).toContain(url);
   });
 
   it("says why when the page answers with an error", async () => {
@@ -205,5 +206,108 @@ describe("discovering a Company from its name", () => {
 
     expect(res.status).toBe(400);
     expect((await res.json()).error).toMatch(/doesn't look like a link/);
+  });
+});
+
+describe("discovery against real-world boards", () => {
+  const MISTRAL = "https://mistral.example/careers";
+
+  it("doesn't take an empty Workable account as a match for a name", async () => {
+    const { request } = createTestApp({
+      sources: { [boardUrls("acme")[6]!]: { body: { name: "Acme", jobs: [] } } },
+    });
+
+    const res = await request("POST", "/api/companies/discover", { input: "Acme" });
+
+    expect(await res.json()).toEqual({ candidates: [] });
+  });
+
+  it("offers a page's feed only when the page has no ATS board", async () => {
+    const page = `<html><head><link rel="alternate" type="application/rss+xml" href="/news/rss"></head>
+      <body><script src="https://jobs.ashbyhq.com/lumen/embed"></script></body></html>`;
+    const { request, requested } = createTestApp({
+      sources: {
+        ...boards,
+        [MISTRAL]: { body: page, contentType: "text/html" },
+        "https://mistral.example/news/rss": { file: "tests/fixtures/sources/feed/acme-rss.xml", contentType: "application/rss+xml" },
+        "https://mistral.example/news/rss?paged=2": { file: "tests/fixtures/sources/feed/empty-rss.xml", contentType: "application/rss+xml" },
+      },
+    });
+
+    const res = await request("POST", "/api/companies/discover", { input: MISTRAL });
+
+    expect((await res.json()).candidates.map((c: { source: unknown }) => c.source)).toEqual([
+      { type: "ashby", key: "lumen" },
+    ]);
+    expect(requested).not.toContain("https://mistral.example/news/rss");
+  });
+
+  it("also tries the first word of a name", async () => {
+    const { request } = createTestApp({ sources: { [boardUrls("northwind")[1]!]: json("lever/northwind.json") } });
+
+    const res = await request("POST", "/api/companies/discover", { input: "Northwind Institute" });
+
+    expect((await res.json()).candidates).toEqual([
+      expect.objectContaining({ source: { type: "lever", key: "northwind" }, jobCount: 3 }),
+    ]);
+  });
+
+  it("tries a dotted name as it is written", async () => {
+    const { request, requested } = createTestApp();
+
+    await request("POST", "/api/companies/discover", { input: "Lumen.ai" });
+
+    expect(requested).toContain("https://api.ashbyhq.com/posting-api/job-board/lumen.ai");
+  });
+
+  it("suggests a Greenhouse board's own name, even when it has no Jobs", async () => {
+    const { request } = createTestApp({
+      sources: {
+        "https://boards-api.greenhouse.io/v1/boards/idq/jobs": { body: { jobs: [], meta: { total: 0 } } },
+        "https://boards-api.greenhouse.io/v1/boards/idq": { body: { name: "ID Quantique", content: "" } },
+      },
+    });
+
+    const res = await request("POST", "/api/companies/discover", { input: "https://job-boards.greenhouse.io/idq" });
+
+    expect((await res.json()).candidates).toEqual([
+      expect.objectContaining({ suggestedName: "ID Quantique", jobCount: 0 }),
+    ]);
+  });
+
+  it("tries the site's name when its careers page has no ATS board, instead of its news feed", async () => {
+    const page = `<html><head><link rel="alternate" type="application/rss+xml" href="/feed/"></head><body>Join us</body></html>`;
+    const { request, requested } = createTestApp({
+      sources: {
+        "https://www.acme.example/careers": { body: page, contentType: "text/html" },
+        "https://www.acme.example/feed/": { file: "tests/fixtures/sources/feed/acme-rss.xml", contentType: "application/rss+xml" },
+        "https://www.acme.example/feed/?paged=2": { file: "tests/fixtures/sources/feed/empty-rss.xml", contentType: "application/rss+xml" },
+        [boardUrls("acme")[0]!]: json("greenhouse/acme.json"),
+      },
+    });
+
+    const res = await request("POST", "/api/companies/discover", { input: "https://www.acme.example/careers" });
+
+    expect((await res.json()).candidates.map((c: { source: unknown }) => c.source)).toEqual([
+      { type: "greenhouse", key: "acme" },
+    ]);
+    expect(requested).not.toContain("https://www.acme.example/feed/");
+  });
+
+  it("keeps a page's feed when neither the page nor the site's name leads to a board", async () => {
+    const page = `<html><head><link rel="alternate" type="application/rss+xml" href="/jobs.rss"></head><body></body></html>`;
+    const { request } = createTestApp({
+      sources: {
+        "https://careers.globex.example/": { body: page, contentType: "text/html" },
+        "https://careers.globex.example/jobs.rss": { file: "tests/fixtures/sources/feed/acme-rss.xml", contentType: "application/rss+xml" },
+        "https://careers.globex.example/jobs.rss?paged=2": { file: "tests/fixtures/sources/feed/empty-rss.xml", contentType: "application/rss+xml" },
+      },
+    });
+
+    const res = await request("POST", "/api/companies/discover", { input: "https://careers.globex.example/" });
+
+    expect((await res.json()).candidates.map((c: { source: unknown }) => c.source)).toEqual([
+      { type: "feed", key: "https://careers.globex.example/jobs.rss" },
+    ]);
   });
 });
