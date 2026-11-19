@@ -81,7 +81,7 @@ export function App() {
         <div className="panel-inner">
           {active === "companies" ? (
             <>
-              <FollowCompany onFollowed={jobs.reload} />
+              <FollowCompany onFollowed={jobs.reload} onAddShortcut={shortcuts.add} />
               <ShortcutsSection state={shortcuts} />
             </>
           ) : (
