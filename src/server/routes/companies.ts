@@ -1,9 +1,11 @@
-import type { Hono } from "hono";
+import type { Context, Hono } from "hono";
 import type { AppDeps } from "../app.ts";
-import { followCompany, listCompanies, removeCompany, renameCompany } from "../companies.ts";
+import { CompanyNotFoundError, followCompany, listCompanies, removeCompany, renameCompany } from "../companies.ts";
 import { discover } from "../discovery.ts";
 import type { SourceType } from "../../shared/types.ts";
-import { jsonBody } from "./request.ts";
+import { idParam, jsonBody } from "./request.ts";
+
+const companyId = (c: Context) => idParam(c, () => new CompanyNotFoundError());
 
 /** Registers the Companies routes on the /api sub-app. */
 export function registerCompanyRoutes(api: Hono, deps: AppDeps): void {
@@ -13,12 +15,12 @@ export function registerCompanyRoutes(api: Hono, deps: AppDeps): void {
   /** { name } → { company }. The new name shows on all the Company's Jobs. */
   api.patch("/companies/:id", async (c) => {
     const { name } = await jsonBody(c);
-    return c.json({ company: renameCompany(Number(c.req.param("id")), typeof name === "string" ? name : "", deps) });
+    return c.json({ company: renameCompany(companyId(c), typeof name === "string" ? name : "", deps) });
   });
 
   /** → 204. Deletes its Unseen/Seen Jobs; keeps Saved/Applied ones, Outdated, with the Company's name. */
   api.delete("/companies/:id", (c) => {
-    removeCompany(Number(c.req.param("id")), deps);
+    removeCompany(companyId(c), deps);
     return c.body(null, 204);
   });
 

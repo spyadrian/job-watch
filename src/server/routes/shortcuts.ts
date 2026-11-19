@@ -1,7 +1,9 @@
-import type { Hono } from "hono";
+import type { Context, Hono } from "hono";
 import type { AppDeps } from "../app.ts";
-import { addShortcut, listShortcuts, removeShortcut, renameShortcut } from "../shortcuts.ts";
-import { jsonBody } from "./request.ts";
+import { addShortcut, listShortcuts, removeShortcut, renameShortcut, ShortcutNotFoundError } from "../shortcuts.ts";
+import { idParam, jsonBody } from "./request.ts";
+
+const shortcutId = (c: Context) => idParam(c, () => new ShortcutNotFoundError());
 
 /** Shortcuts: list, create, rename, remove. */
 export function registerShortcutRoutes(api: Hono, deps: Pick<AppDeps, "db">): void {
@@ -18,11 +20,11 @@ export function registerShortcutRoutes(api: Hono, deps: Pick<AppDeps, "db">): vo
   /** { name } → { shortcut }. */
   api.patch("/shortcuts/:id", async (c) => {
     const { name } = await jsonBody(c);
-    return c.json({ shortcut: renameShortcut(db, Number(c.req.param("id")), name) });
+    return c.json({ shortcut: renameShortcut(db, shortcutId(c), name) });
   });
 
   api.delete("/shortcuts/:id", (c) => {
-    removeShortcut(db, Number(c.req.param("id")));
+    removeShortcut(db, shortcutId(c));
     return c.body(null, 204);
   });
 }

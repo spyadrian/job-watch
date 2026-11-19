@@ -1,8 +1,10 @@
-import type { Hono } from "hono";
+import type { Context, Hono } from "hono";
 import type { AppDeps } from "../app.ts";
-import { changeStatus, isValidState, jobActions, listJobs, markAllSeen, restoreStatus } from "../jobs.ts";
+import { changeStatus, isValidState, JobNotFoundError, jobActions, listJobs, markAllSeen, restoreStatus } from "../jobs.ts";
 import type { JobAction } from "../../shared/types.ts";
-import { jsonBody } from "./request.ts";
+import { idParam, jsonBody } from "./request.ts";
+
+const jobId = (c: Context) => idParam(c, () => new JobNotFoundError());
 
 /** Jobs: list all, change one Job's status by action. */
 export function registerJobRoutes(api: Hono, deps: Pick<AppDeps, "db">): void {
@@ -25,7 +27,7 @@ export function registerJobRoutes(api: Hono, deps: Pick<AppDeps, "db">): void {
     if (typeof action !== "string" || !jobActions.includes(action as JobAction)) {
       return c.json({ error: `Expected { action } with one of: ${jobActions.join(", ")}.` }, 400);
     }
-    const job = changeStatus(db, Number(c.req.param("id")), action as JobAction);
+    const job = changeStatus(db, jobId(c), action as JobAction);
     return c.json(job ? { job } : { job: null, deleted: true });
   });
 
@@ -38,7 +40,7 @@ export function registerJobRoutes(api: Hono, deps: Pick<AppDeps, "db">): void {
     if (!isValidState(status, wasSaved)) {
       return c.json({ error: "Expected { status, wasSaved } with the Job's previous status." }, 400);
     }
-    const job = restoreStatus(db, Number(c.req.param("id")), status, wasSaved as boolean);
+    const job = restoreStatus(db, jobId(c), status, wasSaved as boolean);
     return c.json(job ? { job } : { job: null, deleted: true });
   });
 }
