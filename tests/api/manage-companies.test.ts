@@ -198,19 +198,38 @@ describe("removing a Company", () => {
     expect((await res.json()).job).toMatchObject({ status: "saved", outdated: true, companyName: "Acme Corp" });
   });
 
-  it("lets the same Source be followed again afterwards, alongside the kept Jobs", async () => {
+  it("lets the same Source be followed again, taking back its kept Jobs instead of duplicating them", async () => {
     const t = await acmeInEveryList();
     await t.request("DELETE", `/api/companies/${t.acme.id}`);
 
     await t.follow("acme", "Acme");
 
-    const acmeJobs = (await t.jobs()).filter((j) => j.companyName.startsWith("Acme"));
-    expect(acmeJobs.map((j) => [j.companyName, j.status, j.outdated])).toEqual([
-      ["Acme Corp", "saved", true],
-      ["Acme Corp", "applied", true],
-      ["Acme", "unseen", false],
-      ["Acme", "unseen", false],
-      ["Acme", "unseen", false],
+    const acmeJobs = (await t.jobs()).filter((j) => j.companyName !== "Many Roles");
+    expect(acmeJobs).toEqual([
+      { ...t.saved, status: "saved", companyName: "Acme" },
+      { ...t.applied, status: "applied", companyName: "Acme" },
+      { ...t.seen, id: expect.any(Number), status: "unseen", companyName: "Acme" },
+    ]);
+  });
+
+  it("takes back a kept Job that was no longer published once it reappears in the followed-again Source", async () => {
+    const t = await acmeInEveryList();
+    await t.request("DELETE", `/api/companies/${t.acme.id}`);
+    const acmeBoard = t.sources[greenhouse("acme")]!;
+    t.sources[greenhouse("acme")] = { body: { jobs: [] } };
+    await t.follow("acme", "Acme");
+    expect((await t.jobs()).filter((j) => j.id === t.saved.id)).toEqual([
+      { ...t.saved, status: "saved", outdated: true, companyName: "Acme Corp" },
+    ]);
+
+    t.sources[greenhouse("acme")] = acmeBoard;
+    await (await t.request("POST", "/api/refresh")).text();
+
+    const acmeJobs = (await t.jobs()).filter((j) => j.companyName !== "Many Roles");
+    expect(acmeJobs.map((j) => [j.id === t.saved.id || j.id === t.applied.id, j.status, j.outdated, j.companyName])).toEqual([
+      [true, "saved", false, "Acme"],
+      [true, "applied", false, "Acme"],
+      [false, "unseen", false, "Acme"],
     ]);
   });
 

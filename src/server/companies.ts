@@ -43,7 +43,7 @@ export async function followCompany(
     const { id } = db
       .prepare("INSERT INTO company (name, source_type, source_key, created_at) VALUES (?, ?, ?, ?) RETURNING id")
       .get(name, source.type, source.key, now) as { id: number };
-    for (const job of jobs) insertJob(db, { id, name }, job, now);
+    for (const job of jobs) insertJob(db, { id, name, source }, job, now);
     return {
       company: { id, name, source: { type: source.type, key: source.key }, sourceLabel: adapter.label, createdAt: now, lastError: null },
       jobCount: jobs.length,

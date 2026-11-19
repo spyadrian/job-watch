@@ -64,6 +64,15 @@ const migrations: string[] = [
   `INSERT INTO shortcut (name, url, position) VALUES
      ('Jobup', 'https://www.jobup.ch', 0),
      ('Indeed Switzerland', 'https://ch.indeed.com', 1);`,
+  // Each Job remembers its Source, so the Jobs kept after a Company is removed can be
+  // taken back when the same Source is followed again.
+  `ALTER TABLE job ADD COLUMN source_type TEXT;
+   ALTER TABLE job ADD COLUMN source_key TEXT;
+   UPDATE job SET
+     source_type = (SELECT source_type FROM company WHERE company.id = job.company_id),
+     source_key = (SELECT source_key FROM company WHERE company.id = job.company_id)
+   WHERE company_id IS NOT NULL;
+   CREATE INDEX job_kept_by_source ON job (source_type, source_key, source_job_id) WHERE company_id IS NULL;`,
 ];
 
 /** Test-only: drops every table and replays the migrations, as on a first start. */

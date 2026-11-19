@@ -3,7 +3,7 @@
 import { inTransaction, type Database } from "./db.ts";
 import { RequestError } from "./errors.ts";
 import { jobStatuses, restore, transition, type Transition } from "../shared/job-lifecycle.ts";
-import type { Job, JobAction, JobStatus } from "../shared/types.ts";
+import type { Job, JobAction, JobStatus, SourceRef } from "../shared/types.ts";
 import type { NormalizedJob } from "./sources/index.ts";
 
 export { jobActions } from "../shared/job-lifecycle.ts";
@@ -55,24 +55,38 @@ export function markAllSeen(db: Database, ids: number[]): Job[] {
   );
 }
 
-/** The Company a Job is stored under: its id and current name. */
+/** The Company a Job is stored under: its id, current name and Source. */
 export interface JobOwner {
   id: number;
   name: string;
+  source: SourceRef;
 }
 
 /**
- * Stores a Job read from the Company's Source for the first time: Unseen, first
- * fetched `now`. Returns false when the Company already has it.
+ * Stores a Job read from the Company's Source that the Company doesn't have yet.
+ * A Job kept from an earlier, removed Company following the same Source is taken
+ * back (status kept, current again); otherwise the Job is new: Unseen, first fetched
+ * `now`. Returns whether it is new.
  */
 export function insertJob(db: Database, owner: JobOwner, job: NormalizedJob, now: string): boolean {
+  const locations = JSON.stringify(job.locations);
+  const { changes: takenBack } = db
+    .prepare(
+      `UPDATE job SET company_id = ?, company_name = ?, title = ?, url = ?, locations = ?, published_at = ?, outdated = 0
+       WHERE id = (SELECT id FROM job
+                   WHERE company_id IS NULL AND source_type = ? AND source_key = ? AND source_job_id = ?
+                   ORDER BY id LIMIT 1)`,
+    )
+    .run(owner.id, owner.name, job.title, job.url, locations, job.publishedAt, owner.source.type, owner.source.key, job.sourceJobId);
+  if (takenBack > 0) return false;
   const { changes } = db
     .prepare(
-      `INSERT INTO job (company_id, company_name, source_job_id, title, url, locations, published_at, first_fetched_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO job (company_id, company_name, source_type, source_key, source_job_id, title, url, locations,
+                        published_at, first_fetched_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT (company_id, source_job_id) DO NOTHING`,
     )
-    .run(owner.id, owner.name, job.sourceJobId, job.title, job.url, JSON.stringify(job.locations), job.publishedAt, now);
+    .run(owner.id, owner.name, owner.source.type, owner.source.key, job.sourceJobId, job.title, job.url, locations, job.publishedAt, now);
   return changes > 0;
 }
 

@@ -162,10 +162,11 @@ interface StoredJob {
 function storeRead(db: Database, companyId: number, jobs: NormalizedJob[], now: string): { new: number; outdated: number } {
   const changes = { new: 0, outdated: 0 };
   return inTransaction(db, () => {
-    const company = db.prepare("SELECT id, name FROM company WHERE id = ?").get(companyId) as
-      | { id: number; name: string }
+    const company = db.prepare("SELECT id, name, source_type, source_key FROM company WHERE id = ?").get(companyId) as
+      | CompanyToRead
       | undefined;
     if (!company) return changes;
+    const owner = { id: company.id, name: company.name, source: { type: company.source_type, key: company.source_key } };
     const stored = new Map(
       (
         db
@@ -181,7 +182,7 @@ function storeRead(db: Database, companyId: number, jobs: NormalizedJob[], now: 
     for (const job of read.values()) {
       const existing = stored.get(job.sourceJobId);
       if (existing) update.run(job.title, job.url, JSON.stringify(job.locations), job.publishedAt, existing.id);
-      else if (insertJob(db, company, job, now)) changes.new++;
+      else if (insertJob(db, owner, job, now)) changes.new++;
     }
 
     const remove = db.prepare("DELETE FROM job WHERE id = ?");
