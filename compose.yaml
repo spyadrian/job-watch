@@ -1,0 +1,14 @@
+services:
+  job-watch:
+    build: .
+    image: job-watch
+    restart: unless-stopped
+    ports:
+      # Reachable only from this machine.
+      - "127.0.0.1:8080:8080"
+    volumes:
+      # Back up by copying job-watch.db out of this volume.
+      - job-watch-data:/data
+
+volumes:
+  job-watch-data:

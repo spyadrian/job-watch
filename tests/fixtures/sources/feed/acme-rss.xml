@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:job_listing="https://wpjobmanager.com/job_listing">
+  <channel>
+    <title>Acme Careers</title>
+    <link>https://careers.acme.example/</link>
+    <item>
+      <title>Data Engineer</title>
+      <link>https://careers.acme.example/jobs/data-engineer/</link>
+      <guid isPermaLink="false">https://careers.acme.example/?p=101</guid>
+      <pubDate>Mon, 12 Jan 2026 08:30:00 +0100</pubDate>
+      <job_listing:location><![CDATA[Geneva, Switzerland]]></job_listing:location>
+    </item>
+    <item>
+      <title>Support &amp; Success Lead</title>
+      <link>https://careers.acme.example/jobs/support-lead/</link>
+    </item>
+  </channel>
+</rss>

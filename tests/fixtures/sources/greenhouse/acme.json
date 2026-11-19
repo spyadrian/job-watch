@@ -1,0 +1,43 @@
+{
+  "jobs": [
+    {
+      "absolute_url": "https://job-boards.greenhouse.io/acme/jobs/4012001",
+      "data_compliance": [{ "type": "gdpr", "requires_consent": false, "requires_processing_consent": false, "requires_retention_consent": false, "retention_period": null }],
+      "internal_job_id": 3901001,
+      "location": { "name": "Zürich, Switzerland" },
+      "metadata": null,
+      "id": 4012001,
+      "updated_at": "2026-01-12T10:15:22-05:00",
+      "requisition_id": "ENG-101",
+      "title": "Senior Backend Engineer",
+      "company_name": "Acme Robotics",
+      "first_published": "2026-01-08T09:00:00-05:00"
+    },
+    {
+      "absolute_url": "https://job-boards.greenhouse.io/acme/jobs/4012002",
+      "data_compliance": [{ "type": "gdpr", "requires_consent": false, "requires_processing_consent": false, "requires_retention_consent": false, "retention_period": null }],
+      "internal_job_id": 3901002,
+      "location": { "name": "Geneva; Lausanne; Remote - Switzerland" },
+      "metadata": null,
+      "id": 4012002,
+      "updated_at": "2026-01-13T08:00:00-05:00",
+      "requisition_id": "DES-7",
+      "title": "Product Designer",
+      "company_name": "Acme Robotics",
+      "first_published": "2026-01-10T12:30:00-05:00"
+    },
+    {
+      "absolute_url": "https://job-boards.greenhouse.io/acme/jobs/4012003",
+      "data_compliance": [{ "type": "gdpr", "requires_consent": false, "requires_processing_consent": false, "requires_retention_consent": false, "retention_period": null }],
+      "internal_job_id": 3901003,
+      "location": { "name": "" },
+      "metadata": null,
+      "id": 4012003,
+      "updated_at": "2026-01-02T16:45:10-05:00",
+      "requisition_id": null,
+      "title": "Office Manager",
+      "company_name": "Acme Robotics"
+    }
+  ],
+  "meta": { "total": 3 }
+}

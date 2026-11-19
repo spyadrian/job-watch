@@ -1,0 +1,18 @@
+{
+  "https://boards-api.greenhouse.io/v1/boards/acme/jobs": {
+    "file": "sources/greenhouse/acme.json",
+    "contentType": "application/json"
+  },
+  "https://boards-api.greenhouse.io/v1/boards/manyroles/jobs": {
+    "file": "sources/greenhouse/manyroles.json",
+    "contentType": "application/json"
+  },
+  "https://apply.workable.com/api/v1/widget/accounts/acme": {
+    "file": "sources/workable/acme.json",
+    "contentType": "application/json"
+  },
+  "https://www.initech.example/careers": {
+    "file": "sources/careers/nothing.html",
+    "contentType": "text/html; charset=utf-8"
+  }
+}

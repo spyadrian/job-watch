@@ -1,0 +1,75 @@
+{
+  "name": "Acme Robotics",
+  "description": "<p>We build robots.</p>",
+  "jobs": [
+    {
+      "title": "Machine Learning Engineer - EMEA Remote",
+      "shortcode": "81B46579FE",
+      "code": "",
+      "employment_type": "Full-time",
+      "telecommuting": true,
+      "department": "Engineering",
+      "url": "https://apply.workable.com/j/81B46579FE",
+      "shortlink": "https://apply.workable.com/j/81B46579FE",
+      "application_url": "https://apply.workable.com/j/81B46579FE/apply",
+      "published_on": "2026-01-08",
+      "created_at": "2026-01-07",
+      "country": "Switzerland",
+      "city": "Zürich",
+      "state": "Zürich",
+      "education": "",
+      "experience": "",
+      "function": "Engineering",
+      "industry": "Computer Software",
+      "locations": [
+        { "country": "Switzerland", "countryCode": "CH", "city": "Zürich", "region": "Zürich", "hidden": false },
+        { "country": "France", "countryCode": "FR", "city": "Paris", "region": "Île-de-France", "hidden": false },
+        { "country": "Germany", "countryCode": "DE", "city": "Berlin", "region": "Berlin", "hidden": true }
+      ]
+    },
+    {
+      "title": "Product Designer",
+      "shortcode": "19A136F8E2",
+      "code": "",
+      "employment_type": "Full-time",
+      "telecommuting": false,
+      "department": "Design",
+      "url": "https://apply.workable.com/j/19A136F8E2",
+      "shortlink": "https://apply.workable.com/j/19A136F8E2",
+      "application_url": "https://apply.workable.com/j/19A136F8E2/apply",
+      "published_on": "2026-01-10",
+      "created_at": "2026-01-10",
+      "country": "Switzerland",
+      "city": "Geneva",
+      "state": "",
+      "education": "",
+      "experience": "",
+      "function": "Design",
+      "industry": "Computer Software",
+      "locations": [
+        { "country": "Switzerland", "countryCode": "CH", "city": "Geneva", "region": null, "hidden": false }
+      ]
+    },
+    {
+      "title": "Wild Card",
+      "shortcode": "5C2D7E91AB",
+      "code": "",
+      "employment_type": "Full-time",
+      "telecommuting": false,
+      "department": "",
+      "url": "https://apply.workable.com/j/5C2D7E91AB",
+      "shortlink": "https://apply.workable.com/j/5C2D7E91AB",
+      "application_url": "https://apply.workable.com/j/5C2D7E91AB/apply",
+      "published_on": null,
+      "created_at": "2025-10-19",
+      "country": "",
+      "city": "",
+      "state": "",
+      "education": "",
+      "experience": "",
+      "function": "",
+      "industry": "",
+      "locations": []
+    }
+  ]
+}

@@ -16,3 +16,20 @@
 
 # Local issue tracker (private)
 .scratch/
+
+# Node / build output
+node_modules/
+dist/
+coverage/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Local databases
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
