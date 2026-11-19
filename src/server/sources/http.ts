@@ -10,7 +10,7 @@ export const SOURCE_TIMEOUT_MS = 15_000;
 export async function getText(ctx: SourceContext, url: string, what: string): Promise<string> {
   let res: Response;
   try {
-    res = await ctx.fetch(url, { signal: AbortSignal.timeout(SOURCE_TIMEOUT_MS), redirect: "follow" });
+    res = await ctx.fetch(url, { signal: AbortSignal.timeout(ctx.sourceTimeoutMs ?? SOURCE_TIMEOUT_MS), redirect: "follow" });
   } catch (err) {
     const timedOut = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
     throw new SourceError(timedOut ? `${what} didn't answer in time` : `Couldn't reach ${what}`);

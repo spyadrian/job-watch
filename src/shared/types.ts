@@ -84,6 +84,22 @@ export interface Shortcut {
   url: string;
 }
 
+/** What a refresh changed: new Jobs, Jobs that became Outdated, Sources that failed. */
+export interface RefreshSummary {
+  new: number;
+  outdated: number;
+  failed: number;
+}
+
+/**
+ * POST /api/refresh streams these as NDJSON (one JSON object per line):
+ * a start, one progress line per Source as it completes, then the summary.
+ */
+export type RefreshEvent =
+  | { type: "start"; total: number }
+  | { type: "progress"; done: number; total: number; companyId: number; companyName: string; error: string | null }
+  | { type: "done"; summary: RefreshSummary };
+
 export interface Filter {
   /** Each City filter is a list of spellings, e.g. ["Geneva", "Genève", "Genf"]. */
   cities: string[][];
