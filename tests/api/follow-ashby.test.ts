@@ -52,6 +52,23 @@ describe("discovering an Ashby Company from a link", () => {
     expect((await res.json()).error).toBe('The Ashby board "nope" doesn\'t exist (HTTP 404)');
   });
 
+  it("ignores an unlisted Job even when it is incomplete", async () => {
+    const { request, sources } = createTestApp();
+    sources[LUMEN] = {
+      body: {
+        jobs: [
+          { id: "1", title: "Engineer", jobUrl: "https://jobs.ashbyhq.com/lumen/1", isListed: true },
+          { id: "2", isListed: false },
+        ],
+      },
+    };
+
+    const res = await request("POST", "/api/companies/discover", { input: "https://jobs.ashbyhq.com/lumen" });
+
+    expect(res.status).toBe(200);
+    expect((await res.json()).candidates[0].jobCount).toBe(1);
+  });
+
   it("refuses an answer in an unexpected format rather than reporting zero jobs", async () => {
     const { request, sources } = createTestApp();
     sources[LUMEN] = { body: { apiVersion: "1" } };

@@ -41,8 +41,8 @@ export const ashby: SourceAdapter = {
     if (!Array.isArray(raw)) throw new SourceError(unexpected);
 
     const jobs: NormalizedJob[] = (raw as AshbyJob[]).flatMap((job) => {
+      if (job?.isListed === false) return [];
       if (!job?.id || !job.title || !job.jobUrl) throw new SourceError(unexpected);
-      if (job.isListed === false) return [];
       return [
         {
           sourceJobId: job.id,
