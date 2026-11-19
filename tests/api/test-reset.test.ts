@@ -58,4 +58,32 @@ describe("test-only reset", () => {
     ]);
     expect(await (await request("GET", "/api/jobs")).json()).toEqual({ jobs: [] });
   });
+
+  it("stops the forgotten refresh from reading the Sources it hadn't reached yet", async () => {
+    const GLOBEX_JOBS = "https://boards-api.greenhouse.io/v1/boards/globex/jobs";
+    let release = () => {};
+    let hold = false;
+    const { request, app, requested } = createTestApp({
+      sources: { ...acme, [GLOBEX_JOBS]: acme[ACME_JOBS] },
+      testReset: true,
+      refreshConcurrency: 1,
+      wrapFetch: (recorded) => async (input, init) => {
+        if (hold) await new Promise<void>((go) => (release = go));
+        return recorded(input, init);
+      },
+    });
+    await request("POST", "/api/companies", { source: { type: "greenhouse", key: "acme" }, name: "Acme" });
+    await request("POST", "/api/companies", { source: { type: "greenhouse", key: "globex" }, name: "Globex" });
+    hold = true;
+    const stale = app.request("/api/refresh", { method: "POST" });
+    await new Promise((r) => setTimeout(r, 5));
+    const before = requested.length;
+
+    expect((await request("POST", "/api/test/reset")).status).toBe(204);
+    hold = false;
+    release();
+    await (await stale).text();
+
+    expect(requested.slice(before)).toEqual([]);
+  });
 });

@@ -392,6 +392,31 @@ describe("a Source that fails", () => {
     expect(await t.job("Sales Lead")).toMatchObject({ companyName: "Globex", status: "unseen" });
   });
 
+  it("counts a read that can't be stored as failed, goes on and always ends the stream", async () => {
+    let db: { close(): void } | undefined;
+    const t = await setup({
+      refreshConcurrency: 1,
+      sources: { [board("globex")]: greenhouse("globex", [analyst]) },
+      // The database goes away while the first Source is being read.
+      wrapFetch: (recorded) => (input, init) => {
+        db?.close();
+        db = undefined;
+        return recorded(input, init);
+      },
+    });
+    await t.follow("acme", "Acme");
+    await t.follow("globex", "Globex");
+    db = t.db;
+
+    const events = await t.refresh();
+
+    expect(events.filter((e) => e.type === "progress").map((e) => "error" in e && typeof e.error)).toEqual([
+      "string",
+      "string",
+    ]);
+    expect(summaryOf(events)).toEqual({ new: 0, outdated: 0, failed: 2 });
+  });
+
   it("clears the Company's error on the next successful read", async () => {
     const t = await setup();
     await t.follow("acme", "Acme");

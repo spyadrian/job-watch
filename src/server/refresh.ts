@@ -64,27 +64,33 @@ function startRun(deps: AppDeps): RefreshRun & { cancel(): void } {
   };
 
   const finished = (async (): Promise<RefreshSummary> => {
-    const companies = deps.db
-      .prepare("SELECT id, name, source_type, source_key FROM company ORDER BY id")
-      .all() as unknown as CompanyToRead[];
-    const total = companies.length;
     const summary: RefreshSummary = { new: 0, outdated: 0, failed: 0 };
-    emit({ type: "start", total });
+    try {
+      const companies = deps.db
+        .prepare("SELECT id, name, source_type, source_key FROM company ORDER BY id")
+        .all() as unknown as CompanyToRead[];
+      const total = companies.length;
+      emit({ type: "start", total });
 
-    let next = 0;
-    let done = 0;
-    const worker = async () => {
-      while (next < companies.length) {
-        const company = companies[next++]!;
-        const error = await refreshCompany(company, deps, summary, () => cancelled);
-        if (error !== null) summary.failed++;
-        done++;
-        emit({ type: "progress", done, total, companyId: company.id, companyName: company.name, error });
-      }
-    };
-    const concurrency = deps.refreshConcurrency ?? REFRESH_CONCURRENCY;
-    await Promise.all(Array.from({ length: Math.min(concurrency, total) }, worker));
-    emit({ type: "done", summary: { ...summary } });
+      let next = 0;
+      let done = 0;
+      const worker = async () => {
+        // A cancelled refresh (test reset) starts no further reads.
+        while (!cancelled && next < companies.length) {
+          const company = companies[next++]!;
+          const error = await refreshCompany(company, deps, summary, () => cancelled);
+          if (error !== null) summary.failed++;
+          done++;
+          emit({ type: "progress", done, total, companyId: company.id, companyName: company.name, error });
+        }
+      };
+      const concurrency = deps.refreshConcurrency ?? REFRESH_CONCURRENCY;
+      await Promise.all(Array.from({ length: Math.min(concurrency, total) }, worker));
+    } catch (err) {
+      console.error(err); // e.g. the database can't be read: still end the stream
+    } finally {
+      emit({ type: "done", summary: { ...summary } });
+    }
     return summary;
   })();
 
@@ -101,32 +107,41 @@ function startRun(deps: AppDeps): RefreshRun & { cancel(): void } {
   };
 }
 
-/** Reads one Source and stores the result; returns the error message, or null on success. */
+/**
+ * Reads one Source and stores the result; returns the error message, or null on success.
+ * Any failure, reading or storing, fails this Source only and is recorded on its Company.
+ */
 async function refreshCompany(
   company: CompanyToRead,
   deps: AppDeps,
   summary: RefreshSummary,
   isCancelled: () => boolean,
 ): Promise<string | null> {
-  const adapter = adapterFor(company.source_type);
-  let jobs: NormalizedJob[];
   try {
+    const adapter = adapterFor(company.source_type);
     if (!adapter) throw new Error(`Unsupported Source type "${company.source_type}"`);
-    jobs = (await adapter.read(company.source_key, deps)).jobs;
+    const { jobs } = await adapter.read(company.source_key, deps);
+    if (isCancelled()) return null;
+    const changes = storeRead(deps.db, company.id, jobs, deps.clock.now().toISOString());
+    summary.new += changes.new;
+    summary.outdated += changes.outdated;
+    return null;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    if (!isCancelled()) {
-      deps.db
-        .prepare("UPDATE company SET last_error = ?, last_error_at = ? WHERE id = ?")
-        .run(message, deps.clock.now().toISOString(), company.id);
-    }
+    if (!isCancelled()) recordError(deps, company.id, message);
     return message;
   }
-  if (isCancelled()) return null;
-  const changes = storeRead(deps.db, company.id, jobs, deps.clock.now().toISOString());
-  summary.new += changes.new;
-  summary.outdated += changes.outdated;
-  return null;
+}
+
+/** Remembers why the Company's Source failed; a failure to do so only loses that note. */
+function recordError(deps: AppDeps, companyId: number, message: string): void {
+  try {
+    deps.db
+      .prepare("UPDATE company SET last_error = ?, last_error_at = ? WHERE id = ?")
+      .run(message, deps.clock.now().toISOString(), companyId);
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 interface StoredJob {
