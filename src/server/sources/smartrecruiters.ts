@@ -31,6 +31,8 @@ interface Posting {
 export const smartrecruiters: SourceAdapter = {
   type: "smartrecruiters",
   label: "SmartRecruiters",
+  // Any company id answers 200 with { totalFound: 0, content: [] }.
+  unknownKeyReadsEmpty: true,
 
   matchLink(url) {
     const segments = url.pathname.split("/").filter(Boolean);

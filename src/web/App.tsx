@@ -103,6 +103,7 @@ export function App() {
                   jobs.reload();
                   companies.reload();
                 }}
+                onAddShortcut={shortcuts.add}
               />
               <CompaniesSection state={companies} />
               <ShortcutsSection state={shortcuts} />

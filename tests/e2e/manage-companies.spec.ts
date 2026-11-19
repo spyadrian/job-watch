@@ -43,7 +43,7 @@ test("refuses to follow a Source again with Already following", async ({ page })
   await tab(page, "Companies").click();
   const form = page.getByRole("region", { name: "Follow a Company" });
 
-  await form.getByLabel("Link", { exact: true }).fill("https://boards.greenhouse.io/acme");
+  await form.getByLabel("Link or Company name").fill("https://boards.greenhouse.io/acme");
   await form.getByRole("button", { name: "Find jobs" }).click();
 
   await expect(form).toContainText("Already following Acme");

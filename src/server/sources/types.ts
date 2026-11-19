@@ -37,6 +37,11 @@ export interface SourceAdapter {
    * the Source key (slug or feed URL), or null when the link isn't one of ours.
    */
   matchLink(url: URL): string | null;
+  /**
+   * True when the ATS answers a key it doesn't know with a valid, empty board
+   * (instead of an error), so an empty read doesn't prove the Company is there.
+   */
+  unknownKeyReadsEmpty?: boolean;
   /** Reads every Job of the Source. Throws SourceError on any failure; never returns a partial list. */
   read(key: string, ctx: SourceContext): Promise<SourceRead>;
 }
