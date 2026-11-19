@@ -90,3 +90,43 @@ test("e, s and a triage the selected Job, the next Job takes its place, and u un
   await page.keyboard.press("s");
   await expectCounts(page, { Saved: 0, Seen: 1 });
 });
+
+test("shortcuts don't fire while typing in a text field", async ({ page }) => {
+  await follow(page, "acme", "Acme");
+  await page.goto("/");
+  await expect(rows(page)).toHaveCount(3);
+
+  const search = page.getByRole("searchbox", { name: "Search" });
+  await search.click();
+  await page.keyboard.type("jeksau?");
+  await expect(search).toHaveValue("jeksau?");
+  await expect(selected(page)).toHaveCount(0);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expectCounts(page, { Inbox: 3, Seen: 0, Saved: 0, Applied: 0 });
+});
+
+test("? shows the keyboard shortcuts in a dialog that Esc closes", async ({ page }) => {
+  await page.goto("/");
+  const opener = page.getByRole("button", { name: "Keyboard shortcuts" });
+  await opener.focus();
+
+  await page.keyboard.press("?");
+  const dialog = page.getByRole("dialog", { name: "Keyboard shortcuts" });
+  await expect(dialog).toBeVisible();
+  for (const key of ["j", "k", "Enter", "e", "s", "a", "u", "/", "Esc", "?"]) {
+    await expect(dialog.locator("kbd").filter({ hasText: new RegExp(`^${RegExp.escape(key)}$`) })).toHaveCount(1);
+  }
+  // Triage keys do nothing behind the open dialog.
+  await page.keyboard.press("j");
+  await expect(dialog).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(opener).toBeFocused();
+
+  // The button opens it too, and Close returns focus.
+  await opener.click();
+  await dialog.getByRole("button", { name: "Close" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(opener).toBeFocused();
+});

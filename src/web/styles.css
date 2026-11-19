@@ -670,3 +670,92 @@ mark.hl-search.hl-boosted {
     --selected: #20263a;
   }
 }
+
+/* Keyboard help (ticket 13) */
+.help-button {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  font: inherit;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.header-shortcuts + .help-button {
+  margin-left: 0;
+}
+
+.help-button:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+.help-dialog {
+  width: min(440px, calc(100vw - 32px));
+  padding: 20px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.help-dialog::backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+
+.help-dialog h2 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+}
+
+.help-keys {
+  margin: 0 0 16px;
+}
+
+.help-keys div {
+  display: grid;
+  grid-template-columns: 7em 1fr;
+  gap: 12px;
+  padding: 5px 0;
+}
+
+.help-keys div + div {
+  border-top: 1px solid var(--border);
+}
+
+.help-keys dd {
+  margin: 0;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--bg);
+  font: 0.85rem/1.5 var(--font);
+  text-align: center;
+}
+
+.help-dialog form {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.help-dialog button {
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+}

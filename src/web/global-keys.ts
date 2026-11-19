@@ -15,8 +15,9 @@ export function isTyping(target: EventTarget | null): boolean {
 }
 
 /**
- * Page-wide keyboard shortcuts. Ignored while typing in a text field and when Ctrl, Alt or Meta
- * is held, so they never steal a character or a browser shortcut. A handled key's default is prevented.
+ * Page-wide keyboard shortcuts. Ignored while typing in a text field, inside an open dialog
+ * (the page behind a modal is inert), and when Ctrl, Alt or Meta is held, so they never steal
+ * a character or a browser shortcut. A handled key's default is prevented.
  */
 export function useGlobalKeys(handlers: KeyHandlers): void {
   const current = useRef(handlers);
@@ -26,6 +27,7 @@ export function useGlobalKeys(handlers: KeyHandlers): void {
     function onKeyDown(e: KeyboardEvent) {
       if (e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey || e.isComposing) return;
       if (isTyping(e.target)) return;
+      if (e.target instanceof Element && e.target.closest("dialog[open]")) return;
       const handler = current.current[e.key];
       if (!handler) return;
       if (handler(e) === false) return;

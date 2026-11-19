@@ -6,6 +6,7 @@ import { FollowCompany } from "./follow-company.tsx";
 import { useGlobalKeys } from "./global-keys.ts";
 import { emptyFilter, jobRows } from "./job-list.ts";
 import { JobListView } from "./job-list-view.tsx";
+import { KeyboardHelp, KeyboardHelpButton, useKeyboardHelp } from "./keyboard-help.tsx";
 import { StatusToast, useStatusChanges } from "./job-status.tsx";
 import { SearchBox } from "./search-box.tsx";
 import { HeaderShortcuts, ShortcutsSection, useShortcuts } from "./shortcuts.tsx";
@@ -30,6 +31,7 @@ export function App() {
   const status = useStatusChanges(jobs.setJobs);
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  const help = useKeyboardHelp();
 
   useGlobalKeys({
     "/": () => {
@@ -41,6 +43,7 @@ export function App() {
       setQuery("");
     },
     u: () => status.undo(),
+    "?": help.open,
   });
 
   // WAI-ARIA tabs pattern: arrow keys move between tabs, Home/End jump.
@@ -62,6 +65,7 @@ export function App() {
       <header className="app-header">
         <h1 className="brand">Job Watch</h1>
         <HeaderShortcuts shortcuts={shortcuts.shortcuts} />
+        <KeyboardHelpButton onOpen={help.open} />
       </header>
       <nav className="tabs-bar">
         <div role="tablist" aria-label="Lists" className="tabs">
@@ -130,6 +134,7 @@ export function App() {
         </div>
       </main>
       <StatusToast toast={status.toast} onUndo={status.undo} />
+      <KeyboardHelp ref={help.ref} />
     </>
   );
 }
