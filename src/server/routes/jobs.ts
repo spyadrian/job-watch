@@ -6,6 +6,7 @@ import {
   JobNotFoundError,
   jobActions,
   listJobs,
+  markAllSeen,
   restoreStatus,
   TransitionError,
 } from "../jobs.ts";
@@ -16,6 +17,16 @@ export function registerJobRoutes(api: Hono, deps: Pick<AppDeps, "db">): void {
   const { db } = deps;
 
   api.get("/jobs", (c) => c.json({ jobs: listJobs(db) }));
+
+  /** Mark all as seen: { ids } → { jobs } (those that were Unseen and are now Seen). */
+  api.post("/jobs/seen", async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { ids?: unknown } | null;
+    const ids = body?.ids;
+    if (!Array.isArray(ids) || !ids.every((id) => Number.isInteger(id))) {
+      return c.json({ error: "Expected { ids } with the ids of the Jobs to mark Seen." }, 400);
+    }
+    return c.json({ jobs: markAllSeen(db, ids as number[]) });
+  });
 
   /** { action } → { job }, or { job: null, deleted: true } when an Outdated Job is deleted. */
   api.post("/jobs/:id/status", async (c) => {

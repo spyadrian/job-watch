@@ -114,7 +114,7 @@ test("? shows the keyboard shortcuts in a dialog that Esc closes", async ({ page
   const dialog = page.getByRole("dialog", { name: "Keyboard shortcuts" });
   await expect(dialog).toBeVisible();
   for (const key of ["j", "k", "Enter", "e", "s", "a", "u", "/", "Esc", "?"]) {
-    await expect(dialog.locator("kbd").filter({ hasText: new RegExp(`^${RegExp.escape(key)}$`) })).toHaveCount(1);
+    await expect(dialog.locator("kbd").filter({ hasText: new RegExp(`^${key.replace(/[/?]/, "\\$&")}$`) })).toHaveCount(1);
   }
   // Triage keys do nothing behind the open dialog.
   await page.keyboard.press("j");
