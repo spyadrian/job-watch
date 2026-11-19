@@ -48,7 +48,7 @@ describe("discovering a Personio Company from a link", () => {
 
       const res = await request("POST", "/api/companies/discover", { input });
 
-      expect(await res.json()).toEqual({ candidates: [] });
+      expect((await res.json()).candidates).toEqual([]);
     },
   );
 

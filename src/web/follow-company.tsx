@@ -4,7 +4,7 @@ import { call } from "./api.ts";
 
 type Step =
   | { kind: "idle" }
-  | { kind: "found"; candidates: Candidate[] }
+  | { kind: "found"; candidates: Candidate[]; unreachable?: string }
   | { kind: "done"; message: string };
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -66,8 +66,8 @@ export function FollowCompany({
     setError(null);
     setStep({ kind: "idle" });
     try {
-      const { candidates } = await call<DiscoverResponse>("POST", "/api/companies/discover", { input });
-      setStep({ kind: "found", candidates });
+      const { candidates, unreachable } = await call<DiscoverResponse>("POST", "/api/companies/discover", { input });
+      setStep({ kind: "found", candidates, unreachable });
       setChosen(0);
       setName(candidates[0]?.suggestedName ?? "");
       setShortcut(shortcutDraft(input));
@@ -152,7 +152,12 @@ export function FollowCompany({
       </form>
 
       <div aria-live="polite">
-        {nothingFound && <p className="hint result">No supported job board found. Add it as a Shortcut instead?</p>}
+        {nothingFound && step.unreachable && <p className="error result">{step.unreachable}.</p>}
+        {nothingFound && (
+          <p className="hint result">
+            {step.unreachable ? "Add it as a Shortcut instead?" : "No supported job board found. Add it as a Shortcut instead?"}
+          </p>
+        )}
         {step.kind === "done" && <p className="success result">{step.message}</p>}
       </div>
 

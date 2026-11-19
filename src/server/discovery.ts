@@ -1,6 +1,6 @@
 // Source discovery: from what the person typed to zero or more Candidates,
 // each read once through its adapter for an actual job count. Saves nothing.
-import type { Candidate, SourceRef } from "../shared/types.ts";
+import type { Candidate, DiscoverResponse, SourceRef } from "../shared/types.ts";
 import { companyFollowing } from "./companies.ts";
 import type { Database } from "./db.ts";
 import { RequestError } from "./errors.ts";
@@ -20,7 +20,7 @@ export interface DiscoveryDeps extends SourceContext {
   db: Database;
 }
 
-export async function discover(input: string, deps: DiscoveryDeps): Promise<Candidate[]> {
+export async function discover(input: string, deps: DiscoveryDeps): Promise<DiscoverResponse> {
   const url = parseLink(input);
   if (!url) {
     if (input.includes("://")) {
@@ -29,17 +29,26 @@ export async function discover(input: string, deps: DiscoveryDeps): Promise<Cand
         400,
       );
     }
-    return discoverByName(input, deps);
+    return { candidates: await discoverByName(input, deps) };
   }
+  return discoverByLink(url, deps);
+}
 
+/**
+ * The Sources a link designates: a known job board or Job link, else whatever the
+ * page it opens is (a feed) or embeds (boards, feeds). When the page can't be
+ * opened, `unreachable` says why.
+ */
+async function discoverByLink(url: URL, deps: DiscoveryDeps): Promise<DiscoverResponse> {
   const refs = sourcesFromLink(url);
+  let unreachable: string | undefined;
   if (refs.length === 0) {
     // No known link pattern: fetch the link once; an RSS/Atom answer is itself the Source.
     const page = await fetchPage(url, deps);
-    if (page !== null) {
-      const feedRef = feedSourceFromPage(url, page);
-      if (feedRef) refs.push(feedRef);
-      else refs.push(...sourcesInPage(url, page));
+    if ("unreachable" in page) unreachable = page.unreachable;
+    else {
+      const feedRef = feedSourceFromPage(url, page.body);
+      refs.push(...(feedRef ? [feedRef] : sourcesInPage(url, page.body)));
     }
   }
   const results = await Promise.allSettled(refs.map((ref) => candidateFor(ref, deps)));
@@ -50,7 +59,7 @@ export async function discover(input: string, deps: DiscoveryDeps): Promise<Cand
     if (err instanceof SourceError) throw new DiscoveryError(err.message, 502);
     throw err;
   }
-  return candidates;
+  return unreachable === undefined ? { candidates } : { candidates, unreachable };
 }
 
 /**
@@ -152,12 +161,12 @@ function decodeEntities(value: string): string {
     .replaceAll("&amp;", "&");
 }
 
-/** The body behind a link, or null when it can't be fetched (then it simply yields no Source). */
-async function fetchPage(url: URL, deps: DiscoveryDeps): Promise<string | null> {
+/** The body behind a link, or why it can't be fetched (then it yields no Source). */
+async function fetchPage(url: URL, deps: DiscoveryDeps): Promise<{ body: string } | { unreachable: string }> {
   try {
-    return await getText(deps, url.href, `the page ${url.href}`);
+    return { body: await getText(deps, url.href, `the page ${url.href}`) };
   } catch (err) {
-    if (err instanceof SourceError) return null;
+    if (err instanceof SourceError) return { unreachable: err.message };
     throw err;
   }
 }

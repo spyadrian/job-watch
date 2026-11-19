@@ -53,12 +53,24 @@ describe("discovering a Company from its own careers page", () => {
     expect(requested).toEqual([CAREERS]);
   });
 
-  it("finds no candidate when the page can't be fetched", async () => {
+  it("says why when the page answers with an error", async () => {
     const { request } = createTestApp({ sources: { [CAREERS]: { status: 403, body: "Forbidden" } } });
 
     const res = await request("POST", "/api/companies/discover", { input: CAREERS });
 
-    expect(await res.json()).toEqual({ candidates: [] });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      candidates: [],
+      unreachable: `The page ${CAREERS} answered with an error (HTTP 403)`,
+    });
+  });
+
+  it("says so when the page can't be reached at all", async () => {
+    const { request } = createTestApp();
+
+    const res = await request("POST", "/api/companies/discover", { input: CAREERS });
+
+    expect(await res.json()).toEqual({ candidates: [], unreachable: `Couldn't reach the page ${CAREERS}` });
   });
 });
 

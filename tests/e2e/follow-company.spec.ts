@@ -96,4 +96,10 @@ test("offers a Shortcut, prefilled with the name and link, when nothing is found
   await section.getByRole("button", { name: "Find jobs" }).click();
   await expect(section.getByLabel("Shortcut name")).toHaveValue("Globex");
   await expect(section.getByLabel("Shortcut link")).toHaveValue("");
+
+  // A link that can't be opened says so, and still offers the Shortcut.
+  await section.getByLabel("Link or Company name").fill("https://careers.unreachable.example/jobs");
+  await section.getByRole("button", { name: "Find jobs" }).click();
+  await expect(section).toContainText("Couldn't reach the page https://careers.unreachable.example/jobs");
+  await expect(section.getByLabel("Shortcut link")).toHaveValue("https://careers.unreachable.example/jobs");
 });

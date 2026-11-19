@@ -47,6 +47,8 @@ export interface Candidate {
 /** POST /api/companies/discover { input } → */
 export interface DiscoverResponse {
   candidates: Candidate[];
+  /** Set when the pasted link couldn't be opened: why, e.g. "Couldn't reach the page https://…". */
+  unreachable?: string;
 }
 
 export interface Company {

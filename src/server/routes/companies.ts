@@ -24,13 +24,13 @@ export function registerCompanyRoutes(api: Hono, deps: AppDeps): void {
     return c.body(null, 204);
   });
 
-  /** { input: link or name } → { candidates }. Reads Sources but saves nothing. */
+  /** { input: link or name } → { candidates, unreachable? }. Reads Sources but saves nothing. */
   api.post("/companies/discover", async (c) => {
     const { input } = await jsonBody(c);
     if (typeof input !== "string" || !input.trim()) {
       return c.json({ error: "Type a link or a Company name first." }, 400);
     }
-    return c.json({ candidates: await discover(input, deps) });
+    return c.json(await discover(input, deps));
   });
 
   /** { source: { type, key }, name } → 201 { company, jobCount }. */
