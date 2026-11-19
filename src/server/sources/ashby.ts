@@ -41,8 +41,9 @@ export const ashby: SourceAdapter = {
     if (!Array.isArray(raw)) throw new SourceError(unexpected);
 
     const jobs: NormalizedJob[] = (raw as AshbyJob[]).flatMap((job) => {
-      if (job?.isListed === false) return [];
-      if (!job?.id || !job.title || !job.jobUrl) throw new SourceError(unexpected);
+      // An unlisted Job is never shown; a listed one too incomplete to show is skipped
+      // rather than failing the whole board (OpenAI's board has one with an empty title).
+      if (job?.isListed === false || !job?.id || !job.title?.trim() || !job.jobUrl) return [];
       return [
         {
           sourceJobId: job.id,

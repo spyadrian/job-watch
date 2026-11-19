@@ -69,6 +69,23 @@ describe("discovering an Ashby Company from a link", () => {
     expect((await res.json()).candidates[0].jobCount).toBe(1);
   });
 
+  it("skips a listed Job with no title instead of failing the whole board", async () => {
+    const { request, sources } = createTestApp();
+    sources[LUMEN] = {
+      body: {
+        jobs: [
+          { id: "1", title: "Engineer", jobUrl: "https://jobs.ashbyhq.com/lumen/1", isListed: true },
+          { id: "2", title: "", jobUrl: "https://jobs.ashbyhq.com/lumen/2", isListed: true },
+        ],
+      },
+    };
+
+    const res = await request("POST", "/api/companies/discover", { input: "https://jobs.ashbyhq.com/lumen" });
+
+    expect(res.status).toBe(200);
+    expect((await res.json()).candidates[0].jobCount).toBe(1);
+  });
+
   it("refuses an answer in an unexpected format rather than reporting zero jobs", async () => {
     const { request, sources } = createTestApp();
     sources[LUMEN] = { body: { apiVersion: "1" } };
