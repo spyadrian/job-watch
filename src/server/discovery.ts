@@ -2,17 +2,16 @@
 // each read once through its adapter for an actual job count. Saves nothing.
 import type { Candidate, SourceRef } from "../shared/types.ts";
 import type { Database } from "./db.ts";
+import { RequestError } from "./errors.ts";
 import { feedKey, feedSourceFromPage } from "./sources/feed.ts";
 import { getText } from "./sources/http.ts";
 import { adapters, adapterFor, SourceError, type SourceContext } from "./sources/index.ts";
 
-/** The input can't be used; `status` is the HTTP status to answer with. */
-export class DiscoveryError extends Error {
-  status: 400 | 502;
+/** The input can't be used, or no Source it designates could be read. */
+export class DiscoveryError extends RequestError {
   constructor(message: string, status: 400 | 502) {
-    super(message);
+    super(message, status);
     this.name = "DiscoveryError";
-    this.status = status;
   }
 }
 

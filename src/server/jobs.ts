@@ -1,10 +1,11 @@
 // Job lifecycle storage: listing Jobs and applying status changes. The status
 // rules themselves are the pure shared module; routes live in routes/jobs.ts.
 import type { Database } from "./db.ts";
+import { RequestError } from "./errors.ts";
 import { jobStatuses, restore, transition, type Transition } from "../shared/job-lifecycle.ts";
 import type { Job, JobAction, JobStatus } from "../shared/types.ts";
 
-export { jobActions, TransitionError } from "../shared/job-lifecycle.ts";
+export { jobActions } from "../shared/job-lifecycle.ts";
 
 /** Every stored Job, with the live Company name (or the kept one). */
 export function listJobs(db: Database): Job[] {
@@ -17,9 +18,10 @@ export function getJob(db: Database, id: number): Job | undefined {
   return row && toJob(row);
 }
 
-export class JobNotFoundError extends Error {
+export class JobNotFoundError extends RequestError {
   constructor() {
-    super("This Job no longer exists.");
+    super("This Job no longer exists.", 404);
+    this.name = "JobNotFoundError";
   }
 }
 

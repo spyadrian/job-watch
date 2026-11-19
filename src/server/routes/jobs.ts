@@ -1,16 +1,8 @@
 import type { Hono } from "hono";
 import type { AppDeps } from "../app.ts";
-import {
-  changeStatus,
-  isValidState,
-  JobNotFoundError,
-  jobActions,
-  listJobs,
-  markAllSeen,
-  restoreStatus,
-  TransitionError,
-} from "../jobs.ts";
+import { changeStatus, isValidState, jobActions, listJobs, markAllSeen, restoreStatus } from "../jobs.ts";
 import type { JobAction } from "../../shared/types.ts";
+import { jsonBody } from "./request.ts";
 
 /** Jobs: list all, change one Job's status by action. */
 export function registerJobRoutes(api: Hono, deps: Pick<AppDeps, "db">): void {
@@ -20,8 +12,7 @@ export function registerJobRoutes(api: Hono, deps: Pick<AppDeps, "db">): void {
 
   /** Mark all as seen: { ids } → { jobs } (those that were Unseen and are now Seen). */
   api.post("/jobs/seen", async (c) => {
-    const body = (await c.req.json().catch(() => null)) as { ids?: unknown } | null;
-    const ids = body?.ids;
+    const { ids } = await jsonBody(c);
     if (!Array.isArray(ids) || !ids.every((id) => Number.isInteger(id))) {
       return c.json({ error: "Expected { ids } with the ids of the Jobs to mark Seen." }, 400);
     }
@@ -30,19 +21,12 @@ export function registerJobRoutes(api: Hono, deps: Pick<AppDeps, "db">): void {
 
   /** { action } → { job }, or { job: null, deleted: true } when an Outdated Job is deleted. */
   api.post("/jobs/:id/status", async (c) => {
-    const body = (await c.req.json().catch(() => null)) as { action?: unknown } | null;
-    const action = body?.action;
+    const { action } = await jsonBody(c);
     if (typeof action !== "string" || !jobActions.includes(action as JobAction)) {
       return c.json({ error: `Expected { action } with one of: ${jobActions.join(", ")}.` }, 400);
     }
-    try {
-      const job = changeStatus(db, Number(c.req.param("id")), action as JobAction);
-      return c.json(job ? { job } : { job: null, deleted: true });
-    } catch (err) {
-      if (err instanceof JobNotFoundError) return c.json({ error: err.message }, 404);
-      if (err instanceof TransitionError) return c.json({ error: err.message }, 409);
-      throw err;
-    }
+    const job = changeStatus(db, Number(c.req.param("id")), action as JobAction);
+    return c.json(job ? { job } : { job: null, deleted: true });
   });
 
   /**
@@ -50,16 +34,11 @@ export function registerJobRoutes(api: Hono, deps: Pick<AppDeps, "db">): void {
    * or { job: null, deleted: true } when an Outdated Job would go back to Unseen or Seen.
    */
   api.post("/jobs/:id/undo", async (c) => {
-    const body = (await c.req.json().catch(() => null)) as { status?: unknown; wasSaved?: unknown } | null;
-    if (!isValidState(body?.status, body?.wasSaved)) {
+    const { status, wasSaved } = await jsonBody(c);
+    if (!isValidState(status, wasSaved)) {
       return c.json({ error: "Expected { status, wasSaved } with the Job's previous status." }, 400);
     }
-    try {
-      const job = restoreStatus(db, Number(c.req.param("id")), body.status, body.wasSaved as boolean);
-      return c.json(job ? { job } : { job: null, deleted: true });
-    } catch (err) {
-      if (err instanceof JobNotFoundError) return c.json({ error: err.message }, 404);
-      throw err;
-    }
+    const job = restoreStatus(db, Number(c.req.param("id")), status, wasSaved as boolean);
+    return c.json(job ? { job } : { job: null, deleted: true });
   });
 }

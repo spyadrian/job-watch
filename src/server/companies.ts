@@ -1,14 +1,13 @@
 import type { Company, SourceRef, SourceType } from "../shared/types.ts";
 import type { AppDeps } from "./app.ts";
+import { RequestError } from "./errors.ts";
 import { adapterFor, type NormalizedJob } from "./sources/index.ts";
 
-/** Following a Company was refused; `status` is the HTTP status to answer with. */
-export class FollowError extends Error {
-  status: 400 | 409 | 502;
+/** Following or renaming a Company was refused: blank name, already followed, unreadable Source… */
+export class CompanyRequestError extends RequestError {
   constructor(message: string, status: 400 | 409 | 502) {
-    super(message);
-    this.name = "FollowError";
-    this.status = status;
+    super(message, status);
+    this.name = "CompanyRequestError";
   }
 }
 
@@ -22,16 +21,16 @@ export async function followCompany(
   deps: AppDeps,
 ): Promise<{ company: Company; jobCount: number }> {
   const adapter = adapterFor(source.type);
-  if (!adapter) throw new FollowError(`Unsupported Source type "${source.type}"`, 400);
+  if (!adapter) throw new CompanyRequestError(`Unsupported Source type "${source.type}"`, 400);
   const name = rawName.trim();
-  if (!name) throw new FollowError("Give the Company a name.", 400);
+  if (!name) throw new CompanyRequestError("Give the Company a name.", 400);
   refuseIfFollowed(source, deps);
 
   let jobs: NormalizedJob[];
   try {
     jobs = (await adapter.read(source.key, deps)).jobs;
   } catch (err) {
-    throw new FollowError(err instanceof Error ? err.message : String(err), 502);
+    throw new CompanyRequestError(err instanceof Error ? err.message : String(err), 502);
   }
 
   const { db } = deps;
@@ -65,7 +64,7 @@ function refuseIfFollowed(source: SourceRef, { db }: AppDeps): void {
   const followed = db
     .prepare("SELECT name FROM company WHERE source_type = ? AND source_key = ?")
     .get(source.type, source.key) as { name: string } | undefined;
-  if (followed) throw new FollowError(`Already following ${followed.name}`, 409);
+  if (followed) throw new CompanyRequestError(`Already following ${followed.name}`, 409);
 }
 
 interface CompanyRow {
@@ -98,17 +97,17 @@ export function listCompanies({ db }: Pick<AppDeps, "db">): Company[] {
 }
 
 /** The Company is not (or no longer) followed. */
-export class CompanyNotFoundError extends Error {
+export class CompanyNotFoundError extends RequestError {
   constructor() {
-    super("This Company is no longer followed.");
+    super("This Company is no longer followed.", 404);
     this.name = "CompanyNotFoundError";
   }
 }
 
-/** Renames a Company; its Jobs show the new name. Throws FollowError (400) on an empty name. */
+/** Renames a Company; its Jobs show the new name. Throws CompanyRequestError (400) on an empty name. */
 export function renameCompany(id: number, rawName: string, { db }: Pick<AppDeps, "db">): Company {
   const name = rawName.trim();
-  if (!name) throw new FollowError("Give the Company a name.", 400);
+  if (!name) throw new CompanyRequestError("Give the Company a name.", 400);
   return inTransaction(db, () => {
     const row = db.prepare("UPDATE company SET name = ? WHERE id = ? RETURNING *").get(name, id) as unknown as
       | CompanyRow
