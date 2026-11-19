@@ -1,0 +1,60 @@
+{
+  "apiVersion": "1",
+  "jobs": [
+    {
+      "id": "1a2b3c4d-0000-4a00-8000-000000000001",
+      "title": "Senior Data Engineer",
+      "department": "Engineering",
+      "team": "Data",
+      "employmentType": "FullTime",
+      "location": "Zürich",
+      "secondaryLocations": [
+        {
+          "location": "Bern",
+          "address": { "postalAddress": { "addressRegion": "Bern", "addressCountry": "Switzerland", "addressLocality": "Bern" } }
+        },
+        {
+          "location": "Remote - Switzerland",
+          "address": { "postalAddress": { "addressCountry": "Switzerland" } }
+        }
+      ],
+      "publishedAt": "2026-01-08T14:00:00.000+00:00",
+      "isListed": true,
+      "isRemote": false,
+      "workplaceType": "Hybrid",
+      "address": { "postalAddress": { "addressRegion": "Zürich", "addressCountry": "Switzerland", "addressLocality": "Zürich" } },
+      "jobUrl": "https://jobs.ashbyhq.com/lumen/1a2b3c4d-0000-4a00-8000-000000000001",
+      "applyUrl": "https://jobs.ashbyhq.com/lumen/1a2b3c4d-0000-4a00-8000-000000000001/application"
+    },
+    {
+      "id": "1a2b3c4d-0000-4a00-8000-000000000002",
+      "title": "Confidential Executive Search",
+      "department": "Leadership",
+      "team": "Leadership",
+      "employmentType": "FullTime",
+      "location": "Geneva",
+      "secondaryLocations": [],
+      "publishedAt": "2026-01-09T08:00:00.000+00:00",
+      "isListed": false,
+      "isRemote": false,
+      "workplaceType": "OnSite",
+      "jobUrl": "https://jobs.ashbyhq.com/lumen/1a2b3c4d-0000-4a00-8000-000000000002",
+      "applyUrl": "https://jobs.ashbyhq.com/lumen/1a2b3c4d-0000-4a00-8000-000000000002/application"
+    },
+    {
+      "id": "1a2b3c4d-0000-4a00-8000-000000000003",
+      "title": "Customer Success Manager",
+      "department": "Customer Success",
+      "team": "EMEA",
+      "employmentType": "FullTime",
+      "location": "Remote - Europe",
+      "secondaryLocations": [],
+      "publishedAt": "2026-01-10T16:45:00.000+00:00",
+      "isListed": true,
+      "isRemote": true,
+      "workplaceType": "Remote",
+      "jobUrl": "https://jobs.ashbyhq.com/lumen/1a2b3c4d-0000-4a00-8000-000000000003",
+      "applyUrl": "https://jobs.ashbyhq.com/lumen/1a2b3c4d-0000-4a00-8000-000000000003/application"
+    }
+  ]
+}
