@@ -1,0 +1,15 @@
+# Third-party agent skills (reinstall from skills-lock.json)
+.agents/
+.claude/skills/
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+*.swp
