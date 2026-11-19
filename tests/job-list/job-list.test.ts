@@ -187,6 +187,23 @@ describe("the Filter", () => {
     });
   });
 
+  it("combines with search: both must pass, and keyword and search highlights share the row", () => {
+    const jobs = [
+      job({ id: 1, title: "React Engineer", companyName: "Acme" }),
+      job({ id: 2, title: "React Engineer", companyName: "Globex" }),
+      job({ id: 3, title: "Intern", companyName: "Acme" }),
+    ];
+
+    const rows = jobRows(jobs, "inbox", filter({ boosted: ["react"], excluded: ["intern"] }), "acme engineer");
+
+    expect(rows.map((r) => r.job.id)).toEqual([1]);
+    expect(rows[0]!.highlights.title).toEqual([
+      { start: 0, end: 5, kind: "boosted" },
+      { start: 6, end: 14, kind: "search" },
+    ]);
+    expect(rows[0]!.highlights.company).toEqual([{ start: 0, end: 4, kind: "search" }]);
+  });
+
   it("applies only to the Inbox: other lists show everything, in the usual order", () => {
     const jobs = [
       job({ id: 1, status: "saved", title: "Intern", locations: ["Berlin"], firstFetchedAt: "2026-01-12T09:00:00Z" }),

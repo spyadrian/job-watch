@@ -27,6 +27,8 @@ interface Toast {
 
 export interface StatusChanges {
   act: (job: Job, action: JobAction) => void;
+  /** Mark all as seen: the given (visible) Jobs, in one request. */
+  markAllSeen: (jobs: Job[]) => void;
   undo: () => void;
   toast: Toast | null;
 }
@@ -60,6 +62,19 @@ export function useStatusChanges(setJobs: Dispatch<SetStateAction<Job[]>>): Stat
     [putJob, show],
   );
 
+  const markAllSeen = useCallback(
+    (jobs: Job[]) => {
+      call<{ jobs: Job[] }>("POST", "/api/jobs/seen", { ids: jobs.map((j) => j.id) })
+        .then((res) => {
+          const updated = new Map(res.jobs.map((j) => [j.id, j]));
+          setJobs((all) => all.map((j) => updated.get(j.id) ?? j));
+          show(res.jobs.length === 1 ? "Marked 1 Job as seen" : `Marked ${res.jobs.length} Jobs as seen`);
+        })
+        .catch((err: Error) => show(err.message));
+    },
+    [setJobs, show],
+  );
+
   const undo = useCallback(() => {
     const last = toast?.undo;
     if (!last) return;
@@ -76,7 +91,7 @@ export function useStatusChanges(setJobs: Dispatch<SetStateAction<Job[]>>): Stat
     return () => clearTimeout(id);
   }, [toast]);
 
-  return { act, undo, toast };
+  return { act, markAllSeen, undo, toast };
 }
 
 /**

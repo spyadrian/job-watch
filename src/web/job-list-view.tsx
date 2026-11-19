@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { emptyFilter, jobRows, type Job, type JobRow, type ListKind } from "./job-list.ts";
+import { emptyFilter, jobRows, type Filter, type Job, type JobRow, type ListKind } from "./job-list.ts";
 import type { JobAction } from "../shared/types.ts";
 import { Highlighted } from "./highlighted.tsx";
 import { StatusButtons } from "./job-status.tsx";
@@ -11,27 +11,46 @@ export const PAGE_SIZE = 50;
 export function JobListView({
   jobs,
   list,
+  filter,
   query,
   empty,
   onAct,
+  onMarkAllSeen,
 }: {
   jobs: Job[];
   list: ListKind;
+  filter: Filter;
   query: string;
   empty: string;
   onAct: (job: Job, action: JobAction) => void;
+  onMarkAllSeen: (jobs: Job[]) => void;
 }) {
   const [shown, setShown] = useState(PAGE_SIZE);
   const now = useNow();
-  const rows = jobRows(jobs, list, emptyFilter, query);
+  const rows = jobRows(jobs, list, filter, query);
 
   if (rows.length === 0) {
-    const searching = query.trim() !== "" && jobRows(jobs, list, emptyFilter, "").length > 0;
-    return <p className="empty">{searching ? `No Jobs match “${query.trim()}”.` : empty}</p>;
+    const searching = query.trim() !== "" && jobRows(jobs, list, filter, "").length > 0;
+    const filtered = !searching && list === "inbox" && jobRows(jobs, list, emptyFilter, "").length > 0;
+    return (
+      <p className="empty">
+        {searching ? `No Jobs match “${query.trim()}”.` : filtered ? "No Jobs pass your Filter." : empty}
+      </p>
+    );
   }
   const visible = rows.slice(0, shown);
   return (
     <>
+      {list === "inbox" && (
+        <div className="list-actions">
+          <button type="button" onClick={() => onMarkAllSeen(visible.map((r) => r.job))}>
+            Mark all as seen
+          </button>
+          <span className="hint">
+            {visible.length === 1 ? "Marks the Job shown" : `Marks the ${visible.length} Jobs shown`}
+          </span>
+        </div>
+      )}
       <ul className="job-list" aria-label={`${rows.length} Jobs`}>
         {visible.map((row) => (
           <JobRowItem key={row.job.id} row={row} now={now} onAct={onAct} />

@@ -185,7 +185,7 @@ function WordGroup({
       )}
       <form className="word-add" onSubmit={submit}>
         <label htmlFor={inputId} className="visually-hidden">
-          Add a {singular}
+          New {singular}
         </label>
         <input
           id={inputId}
