@@ -169,7 +169,7 @@ async function candidateFor(source: SourceRef, deps: DiscoveryDeps): Promise<Can
   return {
     source,
     sourceLabel: adapter.label,
-    suggestedName: read.companyName?.trim() || nameFromKey(source.key),
+    suggestedName: read.companyName?.trim() || (source.type === "feed" ? nameFromHost(source.key) : nameFromKey(source.key)),
     jobCount: read.jobs.length,
     alreadyFollowing: followed?.name ?? null,
   };
@@ -187,6 +187,12 @@ function parseLink(input: string): URL | null {
   } catch {
     return null;
   }
+}
+
+/** "https://careers.acme.example/feed/" → "Acme": the site's main label (for a feed without a title). */
+function nameFromHost(link: string): string {
+  const host = new URL(link).hostname.replace(/^(?:www|careers|jobs|karriere)\./, "");
+  return nameFromKey(host.split(".")[0] ?? host);
 }
 
 /** "acme-robotics" → "Acme Robotics" (fallback when the Source doesn't state a name). */

@@ -53,6 +53,27 @@ describe("discovering a Company from an RSS or Atom feed link", () => {
     ]);
   });
 
+  it.each([
+    ["https://careers.initech.example/feed/", "<title></title>"],
+    ["https://www.initech.example/jobs.rss", ""],
+  ])("suggests the site's name for %s, a feed without a title", async (feedUrl, title) => {
+    const { request } = createTestApp({
+      sources: {
+        [feedUrl]: {
+          contentType: "application/rss+xml",
+          body: `<?xml version="1.0"?><rss version="2.0"><channel>${title}
+            <item><title>Engineer</title><link>https://initech.example/jobs/1</link></item>
+          </channel></rss>`,
+        },
+        [`${feedUrl}?paged=2`]: { status: 404, body: "Not found" },
+      },
+    });
+
+    const res = await request("POST", "/api/companies/discover", { input: feedUrl });
+
+    expect((await res.json()).candidates).toEqual([expect.objectContaining({ suggestedName: "Initech", jobCount: 1 })]);
+  });
+
   it("keys the feed by its URL without fragment, cache-buster or page number", async () => {
     const { request } = createTestApp({ sources: acme });
 
