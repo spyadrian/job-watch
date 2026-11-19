@@ -836,3 +836,54 @@ mark.hl-search.hl-boosted {
   margin: 0;
   font-size: 0.85rem;
 }
+
+/* Refresh (ticket 05) */
+.refresh {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.refresh button {
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.refresh button:hover {
+  border-color: var(--muted);
+}
+
+.refresh-status {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.refresh-status.error {
+  margin: 0;
+  color: var(--error);
+}
+
+.company-error {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  color: var(--error);
+}
+
+.company-error-label {
+  font-weight: 600;
+}
+
+.company-error-when {
+  color: var(--muted);
+}

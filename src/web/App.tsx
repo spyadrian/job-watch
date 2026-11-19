@@ -8,6 +8,7 @@ import { FilterPanel, useFilter } from "./filter-panel.tsx";
 import { jobRows } from "./job-list.ts";
 import { JobListView } from "./job-list-view.tsx";
 import { StatusToast, useStatusChanges } from "./job-status.tsx";
+import { RefreshControl, useRefresh } from "./refresh.tsx";
 import { SearchBox } from "./search-box.tsx";
 import { HeaderShortcuts, ShortcutsSection, useShortcuts } from "./shortcuts.tsx";
 
@@ -30,6 +31,10 @@ export function App() {
   const companies = useCompanies(jobs.reload);
   const status = useStatusChanges(jobs.setJobs);
   const filter = useFilter();
+  const refresh = useRefresh(() => {
+    jobs.reload();
+    companies.reload();
+  });
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -62,6 +67,7 @@ export function App() {
     <>
       <header className="app-header">
         <h1 className="brand">Job Watch</h1>
+        <RefreshControl refresh={refresh} />
         <HeaderShortcuts shortcuts={shortcuts.shortcuts} />
       </header>
       <nav className="tabs-bar">

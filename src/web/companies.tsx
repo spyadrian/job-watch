@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
-import type { CompaniesResponse, Company } from "../shared/types.ts";
+import type { CompaniesResponse, Company, CompanyError } from "../shared/types.ts";
 import { call } from "./api.ts";
+import { timeAgo } from "./time-ago.ts";
 
 export interface CompaniesState {
   companies: Company[];
@@ -77,6 +78,18 @@ export function CompaniesSection({ state }: { state: CompaniesState }) {
   );
 }
 
+/** The last read of the Company's Source failed: says why and when; gone after the next good read. */
+function CompanyErrorBadge({ error }: { error: CompanyError }) {
+  return (
+    <span className="company-error">
+      <span className="company-error-label">Source failed</span>{" "}
+      <span>
+        {error.message} <span className="company-error-when">({timeAgo(error.at, new Date())})</span>
+      </span>
+    </span>
+  );
+}
+
 function CompanyRow({
   company,
   state,
@@ -149,6 +162,7 @@ function CompanyRow({
         <>
           <span className="company-name">{company.name}</span>
           <span className="shortcut-url">{company.sourceLabel}</span>
+          {company.lastError && <CompanyErrorBadge error={company.lastError} />}
           <span className="row-actions">
             <button
               ref={renameRef}
