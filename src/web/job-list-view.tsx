@@ -1,0 +1,70 @@
+import { useEffect, useState } from "react";
+import { emptyFilter, jobRows, type Job, type JobRow, type ListKind } from "./job-list.ts";
+import { timeAgo } from "./time-ago.ts";
+
+export const PAGE_SIZE = 50;
+
+/** One list (Inbox, Saved, Applied, Seen): the job-list module's rows, 50 at a time. */
+export function JobListView({ jobs, list, empty }: { jobs: Job[]; list: ListKind; empty: string }) {
+  const [shown, setShown] = useState(PAGE_SIZE);
+  const now = useNow();
+  const rows = jobRows(jobs, list, emptyFilter, "");
+
+  if (rows.length === 0) return <p className="empty">{empty}</p>;
+  const visible = rows.slice(0, shown);
+  return (
+    <>
+      <ul className="job-list" aria-label={`${rows.length} Jobs`}>
+        {visible.map((row) => (
+          <JobRowItem key={row.job.id} row={row} now={now} />
+        ))}
+      </ul>
+      {rows.length > shown && (
+        <div className="more">
+          <button type="button" onClick={() => setShown((n) => n + PAGE_SIZE)}>
+            Show {Math.min(PAGE_SIZE, rows.length - shown)} more
+          </button>
+          <span className="hint">
+            Showing {visible.length} of {rows.length}
+          </span>
+        </div>
+      )}
+    </>
+  );
+}
+
+function JobRowItem({ row: { job }, now }: { row: JobRow; now: Date }) {
+  return (
+    <li className="job-row">
+      <a className="job-title" href={job.url} target="_blank" rel="noopener noreferrer">
+        {job.title}
+        <span className="visually-hidden"> (opens in a new tab)</span>
+      </a>
+      <div className="job-meta">
+        <span className="job-company">{job.companyName}</span>
+        {job.locations.length > 0 && (
+          <span className="job-locations">
+            {job.locations.map((location, i) => (
+              <span key={i} className="job-location">
+                {location}
+              </span>
+            ))}
+          </span>
+        )}
+        <time dateTime={job.firstFetchedAt} title={`First fetched ${new Date(job.firstFetchedAt).toLocaleString()}`}>
+          {timeAgo(job.firstFetchedAt, now)}
+        </time>
+      </div>
+    </li>
+  );
+}
+
+/** The current time, ticking every minute so relative ages stay right. */
+function useNow(): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}

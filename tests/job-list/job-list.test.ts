@@ -23,4 +23,49 @@ describe("job list", () => {
     expect(jobRows(jobs, "inbox", emptyFilter, "").map((r) => r.job.id)).toEqual([1]);
     expect(jobRows(jobs, "seen", emptyFilter, "").map((r) => r.job.id)).toEqual([2]);
   });
+
+  describe("sort order", () => {
+    const ids = (jobs: Job[]) => jobRows(jobs, "inbox", emptyFilter, "").map((r) => r.job.id);
+
+    it("puts the most recently first-fetched Jobs first", () => {
+      const jobs = [
+        job({ id: 1, firstFetchedAt: "2026-01-10T09:00:00Z" }),
+        job({ id: 2, firstFetchedAt: "2026-01-12T09:00:00Z" }),
+        job({ id: 3, firstFetchedAt: "2026-01-11T09:00:00Z" }),
+      ];
+
+      expect(ids(jobs)).toEqual([2, 3, 1]);
+    });
+
+    it("orders Jobs first fetched together by publication date, newest first, missing last", () => {
+      const jobs = [
+        job({ id: 1, publishedAt: null }),
+        job({ id: 2, publishedAt: "2026-01-01T00:00:00Z" }),
+        job({ id: 3, publishedAt: "2026-01-09T00:00:00Z" }),
+        job({ id: 4, publishedAt: "2026-01-05T00:00:00Z" }),
+      ];
+
+      expect(ids(jobs)).toEqual([3, 4, 2, 1]);
+    });
+
+    it("breaks remaining ties by title", () => {
+      const jobs = [
+        job({ id: 1, title: "Product Designer", publishedAt: null }),
+        job({ id: 2, title: "Data Engineer", publishedAt: null }),
+        job({ id: 3, title: "backend Engineer", publishedAt: null }),
+        job({ id: 4, title: "Zeta", publishedAt: "2026-01-01T00:00:00Z" }),
+      ];
+
+      expect(ids(jobs)).toEqual([4, 3, 2, 1]);
+    });
+
+    it("compares instants, not strings, whatever the time zone offset", () => {
+      const jobs = [
+        job({ id: 1, firstFetchedAt: "2026-01-10T10:00:00+02:00" }), // 08:00Z
+        job({ id: 2, firstFetchedAt: "2026-01-10T09:00:00Z" }),
+      ];
+
+      expect(ids(jobs)).toEqual([2, 1]);
+    });
+  });
 });

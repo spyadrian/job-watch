@@ -1,4 +1,8 @@
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
+import type { Job } from "../shared/types.ts";
+import { call } from "./api.ts";
+import { FollowCompany } from "./follow-company.tsx";
+import { JobListView } from "./job-list-view.tsx";
 import { HeaderShortcuts, ShortcutsSection, useShortcuts } from "./shortcuts.tsx";
 
 type TabId = "inbox" | "saved" | "applied" | "seen" | "companies";
@@ -16,6 +20,7 @@ export function App() {
   const tabRefs = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({});
   const current = tabs.find((t) => t.id === active)!;
   const shortcuts = useShortcuts();
+  const jobs = useJobs();
 
   // WAI-ARIA tabs pattern: arrow keys move between tabs, Home/End jump.
   function onTabKeyDown(e: KeyboardEvent<HTMLButtonElement>, index: number) {
@@ -67,9 +72,40 @@ export function App() {
         tabIndex={0}
         className="panel"
       >
-        <p className="empty">{current.empty}</p>
-        {active === "companies" && <ShortcutsSection state={shortcuts} />}
+        {active === "companies" ? (
+          <>
+            <FollowCompany onFollowed={jobs.reload} />
+            <ShortcutsSection state={shortcuts} />
+          </>
+        ) : (
+          <>
+            {jobs.loadError && (
+              <p role="alert" className="error">
+                {jobs.loadError}
+              </p>
+            )}
+            <JobListView key={active} jobs={jobs.jobs} list={active} empty={current.empty} />
+          </>
+        )}
       </main>
     </>
   );
+}
+
+/** Every stored Job; the job-list module splits them into lists. */
+function useJobs() {
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const reload = useCallback(() => {
+    call<{ jobs: Job[] }>("GET", "/api/jobs")
+      .then((data) => {
+        setJobs(data.jobs);
+        setLoadError(null);
+      })
+      .catch((err: Error) => setLoadError(`Couldn't load Jobs: ${err.message}`));
+  }, []);
+
+  useEffect(reload, [reload]);
+  return { jobs, loadError, reload };
 }
