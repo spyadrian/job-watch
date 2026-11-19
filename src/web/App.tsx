@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { Job } from "../shared/types.ts";
 import { call } from "./api.ts";
+import { CompaniesSection, useCompanies } from "./companies.tsx";
 import { FollowCompany } from "./follow-company.tsx";
 import { emptyFilter, jobRows } from "./job-list.ts";
 import { JobListView } from "./job-list-view.tsx";
@@ -23,6 +24,7 @@ export function App() {
   const current = tabs.find((t) => t.id === active)!;
   const shortcuts = useShortcuts();
   const jobs = useJobs();
+  const companies = useCompanies(jobs.reload);
   const status = useStatusChanges(jobs.setJobs);
 
   // WAI-ARIA tabs pattern: arrow keys move between tabs, Home/End jump.
@@ -81,7 +83,13 @@ export function App() {
         <div className="panel-inner">
           {active === "companies" ? (
             <>
-              <FollowCompany onFollowed={jobs.reload} />
+              <FollowCompany
+                onFollowed={() => {
+                  jobs.reload();
+                  companies.reload();
+                }}
+              />
+              <CompaniesSection state={companies} />
               <ShortcutsSection state={shortcuts} />
             </>
           ) : (
