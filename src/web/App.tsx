@@ -38,6 +38,7 @@ export function App() {
       if (query === "") return false;
       setQuery("");
     },
+    u: () => status.undo(),
   });
 
   // WAI-ARIA tabs pattern: arrow keys move between tabs, Home/End jump.

@@ -21,13 +21,21 @@ interface Toast {
   /** Changes on every new toast, so its timer restarts. */
   key: number;
   message: string;
-  /** The last status change, which Undo reverts; absent when it can't be undone. */
-  undo?: { jobId: number; status: JobStatus; wasSaved: boolean };
+  /** Whether the toast offers Undo (it reports a status change that can be reverted). */
+  undoable: boolean;
+}
+
+/** The status a Job had before the last change, which Undo (or `u`) restores. */
+interface LastChange {
+  jobId: number;
+  status: JobStatus;
+  wasSaved: boolean;
 }
 
 export interface StatusChanges {
   act: (job: Job, action: JobAction) => void;
-  undo: () => void;
+  /** Reverts the last status change, if any; returns whether there was one. */
+  undo: () => boolean;
   toast: Toast | null;
 }
 
@@ -35,10 +43,12 @@ export interface StatusChanges {
 export function useStatusChanges(setJobs: Dispatch<SetStateAction<Job[]>>): StatusChanges {
   const [toast, setToast] = useState<Toast | null>(null);
   const counter = useRef(0);
+  // Kept after the toast is gone, so `u` still undoes the last change.
+  const last = useRef<LastChange | null>(null);
 
-  const show = useCallback((message: string, undo?: Toast["undo"]) => {
+  const show = useCallback((message: string, undoable = false) => {
     counter.current += 1;
-    setToast({ key: counter.current, message, undo });
+    setToast({ key: counter.current, message, undoable });
   }, []);
 
   const putJob = useCallback(
@@ -52,8 +62,13 @@ export function useStatusChanges(setJobs: Dispatch<SetStateAction<Job[]>>): Stat
       call<{ job: Job | null; deleted?: boolean }>("POST", `/api/jobs/${job.id}/status`, { action })
         .then((res) => {
           putJob(job.id, res.job);
-          if (res.deleted) show("Removed: this Job is no longer published");
-          else show(doneMessage[action], { jobId: job.id, status: job.status, wasSaved: job.wasSaved });
+          if (res.deleted) {
+            last.current = null;
+            show("Removed: this Job is no longer published");
+          } else {
+            last.current = { jobId: job.id, status: job.status, wasSaved: job.wasSaved };
+            show(doneMessage[action], true);
+          }
         })
         .catch((err: Error) => show(err.message));
     },
@@ -61,13 +76,18 @@ export function useStatusChanges(setJobs: Dispatch<SetStateAction<Job[]>>): Stat
   );
 
   const undo = useCallback(() => {
-    const last = toast?.undo;
-    if (!last) return;
+    const change = last.current;
+    if (!change) return false;
+    last.current = null;
     setToast(null);
-    call<{ job: Job }>("POST", `/api/jobs/${last.jobId}/undo`, { status: last.status, wasSaved: last.wasSaved })
-      .then((res) => putJob(last.jobId, res.job))
+    call<{ job: Job }>("POST", `/api/jobs/${change.jobId}/undo`, { status: change.status, wasSaved: change.wasSaved })
+      .then((res) => {
+        putJob(change.jobId, res.job);
+        show("Undone");
+      })
       .catch((err: Error) => show(`Couldn't undo: ${err.message}`));
-  }, [toast, putJob, show]);
+    return true;
+  }, [putJob, show]);
 
   // Disappears on its own.
   useEffect(() => {
@@ -83,16 +103,16 @@ export function useStatusChanges(setJobs: Dispatch<SetStateAction<Job[]>>): Stat
  * The polite live region holding the toast. Always rendered (so announcements are
  * heard), it sits below the scrolling list in a corner and never takes focus.
  */
-export function StatusToast({ toast, onUndo }: { toast: Toast | null; onUndo: () => void }) {
+export function StatusToast({ toast, onUndo }: { toast: Toast | null; onUndo: () => unknown }) {
   return (
     <div role="status" aria-live="polite" className="toast-region">
       {toast && (
         <div key={toast.key} className="toast">
           <span>{toast.message}</span>
-          {toast.undo && (
+          {toast.undoable && (
             <>
               <span aria-hidden="true">·</span>
-              <button type="button" className="toast-undo" onClick={onUndo}>
+              <button type="button" className="toast-undo" aria-keyshortcuts="u" onClick={onUndo}>
                 Undo
               </button>
             </>
@@ -103,24 +123,31 @@ export function StatusToast({ toast, onUndo }: { toast: Toast | null; onUndo: ()
   );
 }
 
-const buttons: { label: string; on: JobStatus; set: JobAction; unset: JobAction }[] = [
-  { label: "Seen", on: "seen", set: "seen", unset: "unseen" },
-  { label: "Save", on: "saved", set: "save", unset: "unsave" },
-  { label: "Applied", on: "applied", set: "apply", unset: "unapply" },
+/** The three status toggles, with the key that toggles each on the selected Job. */
+export const statusToggles: { label: string; key: string; on: JobStatus; set: JobAction; unset: JobAction }[] = [
+  { label: "Seen", key: "e", on: "seen", set: "seen", unset: "unseen" },
+  { label: "Save", key: "s", on: "saved", set: "save", unset: "unsave" },
+  { label: "Applied", key: "a", on: "applied", set: "apply", unset: "unapply" },
 ];
+
+/** The action a toggle performs on this Job: unset when the Job has that status, else set. */
+export function toggleAction(job: Job, toggle: (typeof statusToggles)[number]): JobAction {
+  return job.status === toggle.on ? toggle.unset : toggle.set;
+}
 
 /** Seen, Save and Applied toggles; pressed when the Job has that status. */
 export function StatusButtons({ job, onAct }: { job: Job; onAct: (job: Job, action: JobAction) => void }) {
   return (
     <div role="group" aria-label={`Status of ${job.title}`} className="status-buttons">
-      {buttons.map((b) => {
+      {statusToggles.map((b) => {
         const pressed = job.status === b.on;
-        const action = pressed ? b.unset : b.set;
+        const action = toggleAction(job, b);
         return (
           <button
             key={b.label}
             type="button"
             aria-pressed={pressed}
+            aria-keyshortcuts={b.key}
             disabled={!canApply(job, action)}
             onClick={() => onAct(job, action)}
           >

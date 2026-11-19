@@ -623,3 +623,33 @@ mark.hl-search.hl-boosted {
     --hl-search: #22345e;
   }
 }
+
+/* Keyboard triage (ticket 13): the selected Job carries an accent bar; focus adds the ring. */
+.job-row {
+  scroll-margin-block: 12px;
+  box-shadow: inset 3px 0 0 transparent;
+}
+
+.job-row[aria-current="true"] {
+  box-shadow: inset 3px 0 0 var(--accent);
+  background: var(--selected);
+}
+
+.job-row:focus {
+  outline: none;
+}
+
+.job-row:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+:root {
+  --selected: #eef2fb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --selected: #20263a;
+  }
+}

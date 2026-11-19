@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { emptyFilter, jobRows, type Job, type JobRow, type ListKind } from "./job-list.ts";
 import type { JobAction } from "../shared/types.ts";
+import { useGlobalKeys } from "./global-keys.ts";
 import { Highlighted } from "./highlighted.tsx";
-import { StatusButtons } from "./job-status.tsx";
+import { StatusButtons, statusToggles, toggleAction } from "./job-status.tsx";
 import { timeAgo } from "./time-ago.ts";
 
 export const PAGE_SIZE = 50;
@@ -24,6 +25,7 @@ export function JobListView({
   const [shown, setShown] = useState(PAGE_SIZE);
   const now = useNow();
   const rows = jobRows(jobs, list, emptyFilter, query);
+  const selection = useSelection(rows, shown, setShown, onAct);
 
   if (rows.length === 0) {
     const searching = query.trim() !== "" && jobRows(jobs, list, emptyFilter, "").length > 0;
@@ -34,7 +36,14 @@ export function JobListView({
     <>
       <ul className="job-list" aria-label={`${rows.length} Jobs`}>
         {visible.map((row) => (
-          <JobRowItem key={row.job.id} row={row} now={now} onAct={onAct} />
+          <JobRowItem
+            key={row.job.id}
+            row={row}
+            now={now}
+            onAct={onAct}
+            selected={row.job.id === selection.id}
+            onSelect={selection.select}
+          />
         ))}
       </ul>
       {rows.length > shown && (
@@ -51,17 +60,104 @@ export function JobListView({
   );
 }
 
+/** Controls whose own Enter key must win over "open the selected Job". */
+const ownsEnter = "a, button, input, select, textarea, summary, [role='tab']";
+
+/**
+ * The selected Job: `j` / `k` move it (and keyboard focus) through the rows, `Enter` opens it.
+ * When the selected Job leaves the list, the Job that takes its place is selected.
+ */
+function useSelection(
+  rows: JobRow[],
+  shown: number,
+  setShown: (n: number) => void,
+  onAct: (job: Job, action: JobAction) => void,
+) {
+  const [selection, setSelection] = useState<{ id: number; index: number } | null>(null);
+  const focusPending = useRef(false);
+
+  let index = -1;
+  if (selection && rows.length > 0) {
+    index = rows.findIndex((r) => r.job.id === selection.id);
+    if (index === -1) index = Math.min(selection.index, rows.length - 1);
+  }
+  const current = index === -1 ? null : rows[index]!;
+
+  // Keep the stored selection on the Job that took the place of one that left the list,
+  // and keep keyboard focus on it if focus was lost with the removed row.
+  useEffect(() => {
+    if (!current) return;
+    if (selection?.id !== current.job.id || selection.index !== index) {
+      setSelection({ id: current.job.id, index });
+      if (document.activeElement === document.body || document.activeElement === null) focusPending.current = true;
+    }
+    if (focusPending.current) {
+      focusPending.current = false;
+      const el = document.querySelector<HTMLElement>(`[data-job-id="${current.job.id}"]`);
+      el?.focus();
+      el?.scrollIntoView?.({ block: "nearest" });
+    }
+  });
+
+  function move(to: number) {
+    if (rows.length === 0) return false;
+    const next = Math.max(0, Math.min(to, rows.length - 1));
+    if (next >= shown) setShown(shown + PAGE_SIZE);
+    focusPending.current = true;
+    setSelection({ id: rows[next]!.job.id, index: next });
+  }
+
+  useGlobalKeys({
+    j: () => move(index + 1),
+    k: () => move(index === -1 ? 0 : index - 1),
+    Enter: (e) => {
+      if (!current) return false;
+      if (e.target instanceof Element && e.target.closest(ownsEnter)) return false;
+      window.open(current.job.url, "_blank", "noopener,noreferrer");
+    },
+    // e / s / a: the same toggles as the row's Seen / Save / Applied buttons.
+    ...Object.fromEntries(
+      statusToggles.map((t) => [
+        t.key,
+        () => {
+          if (!current) return false;
+          onAct(current.job, toggleAction(current.job, t));
+        },
+      ]),
+    ),
+  });
+
+  return {
+    id: current?.job.id ?? null,
+    current: current?.job ?? null,
+    select: (job: Job) => {
+      const i = rows.findIndex((r) => r.job.id === job.id);
+      if (i !== -1 && selection?.id !== job.id) setSelection({ id: job.id, index: i });
+    },
+  };
+}
+
 function JobRowItem({
   row: { job, highlights },
   now,
   onAct,
+  selected,
+  onSelect,
 }: {
   row: JobRow;
   now: Date;
   onAct: (job: Job, action: JobAction) => void;
+  selected: boolean;
+  onSelect: (job: Job) => void;
 }) {
   return (
-    <li className="job-row">
+    <li
+      className="job-row"
+      data-job-id={job.id}
+      tabIndex={-1}
+      aria-current={selected ? "true" : undefined}
+      onFocus={() => onSelect(job)}
+    >
       <a className="job-title" href={job.url} target="_blank" rel="noopener noreferrer">
         <Highlighted text={job.title} highlights={highlights.title} />
         <span className="visually-hidden"> (opens in a new tab)</span>
