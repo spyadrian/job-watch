@@ -1,0 +1,38 @@
+{
+  "name": "job-watch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Account-free job watcher run locally with docker compose",
+  "type": "module",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "dev:web": "vite",
+    "dev:server": "node --watch src/server/main.ts",
+    "build": "vite build",
+    "start": "node src/server/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:api": "vitest run tests/api",
+    "test:job-list": "vitest run tests/job-list",
+    "test:e2e": "playwright test",
+    "test:all": "npm run typecheck && npm test && npm run test:e2e"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.9",
+    "hono": "^4.13.19",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  }
+}
