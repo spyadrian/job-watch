@@ -21,6 +21,13 @@ export interface Job {
   outdated: boolean;
 }
 
+/** A link to a careers site whose Jobs cannot be read automatically. */
+export interface Shortcut {
+  id: number;
+  name: string;
+  url: string;
+}
+
 export interface Filter {
   /** Each City filter is a list of spellings, e.g. ["Geneva", "Genève", "Genf"]. */
   cities: string[][];

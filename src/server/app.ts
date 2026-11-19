@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Clock } from "./clock.ts";
 import type { Database } from "./db.ts";
 import type { Job, JobStatus } from "../shared/types.ts";
+import { registerShortcutRoutes } from "./routes/shortcuts.ts";
 
 /** Everything the app needs from the outside world; tests inject fakes. */
 export interface AppDeps {
@@ -26,6 +27,8 @@ export function createApp(deps: AppDeps): Hono {
       .all() as unknown as JobRow[];
     return c.json({ jobs: rows.map(toJob) });
   });
+
+  registerShortcutRoutes(api, deps);
 
   // Keep this catch-all last: unknown API routes answer JSON, never the SPA page.
   api.all("*", (c) => c.json({ error: `Not found: ${c.req.method} ${c.req.path}` }, 404));
