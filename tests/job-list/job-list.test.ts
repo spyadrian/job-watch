@@ -69,3 +69,79 @@ describe("job list", () => {
     });
   });
 });
+
+describe("search", () => {
+  const ids = (jobs: Job[], query: string, list: "inbox" | "saved" | "applied" | "seen" = "inbox") =>
+    jobRows(jobs, list, emptyFilter, query).map((r) => r.job.id);
+
+  it("finds Jobs by title, Company or location, ignoring accents and case", () => {
+    const jobs = [
+      job({ id: 1, title: "Backend Engineer" }),
+      job({ id: 2, title: "Designer", companyName: "Globex" }),
+      job({ id: 3, title: "Designer", locations: ["Zürich", "Genève, Switzerland"] }),
+    ];
+
+    expect(ids(jobs, "BACKEND")).toEqual([1]);
+    expect(ids(jobs, "globex")).toEqual([2]);
+    expect(ids(jobs, "geneve")).toEqual([3]);
+    expect(ids(jobs, "ZURICH")).toEqual([3]);
+  });
+
+  it("requires every word to match, each in any field", () => {
+    const jobs = [
+      job({ id: 1, title: "Backend Engineer", companyName: "Acme", locations: ["Geneva"] }),
+      job({ id: 2, title: "Backend Engineer", companyName: "Globex", locations: ["Zurich"] }),
+      job({ id: 3, title: "Frontend Engineer", companyName: "Acme", locations: ["Geneva"] }),
+    ];
+
+    expect(ids(jobs, "  backend   acme ")).toEqual([1]);
+    expect(ids(jobs, "engineer geneva")).toEqual([1, 3]);
+    expect(ids(jobs, "backend lausanne")).toEqual([]);
+    expect(ids(jobs, "")).toEqual([1, 2, 3]);
+  });
+
+  it("searches the list being viewed", () => {
+    const jobs = [
+      job({ id: 1, title: "Designer", status: "unseen" }),
+      job({ id: 2, title: "Designer", status: "saved" }),
+      job({ id: 3, title: "Engineer", status: "saved" }),
+      job({ id: 4, title: "Designer", status: "applied" }),
+      job({ id: 5, title: "Designer", status: "seen" }),
+    ];
+
+    expect(ids(jobs, "designer", "saved")).toEqual([2]);
+    expect(ids(jobs, "designer", "applied")).toEqual([4]);
+    expect(ids(jobs, "designer", "seen")).toEqual([5]);
+  });
+
+  it("highlights every matching word in title, Company and locations", () => {
+    const [row] = jobRows(
+      [job({ id: 1, title: "Senior Engineer, Engine team", companyName: "Acmé", locations: ["Zürich", "Genève"] })],
+      "inbox",
+      emptyFilter,
+      "engine ACME geneve",
+    );
+
+    expect(row!.highlights).toEqual({
+      title: [
+        { start: 7, end: 13, kind: "search" },
+        { start: 17, end: 23, kind: "search" },
+      ],
+      company: [{ start: 0, end: 4, kind: "search" }],
+      locations: [[], [{ start: 0, end: 6, kind: "search" }]],
+    });
+  });
+
+  it("keeps highlight ranges on the original text when it holds decomposed accents", () => {
+    const title = "Génève office"; // "Genève" written with combining marks
+    const [row] = jobRows([job({ id: 1, title })], "inbox", emptyFilter, "geneve");
+
+    expect(row!.highlights.title).toEqual([{ start: 0, end: 8, kind: "search" }]);
+  });
+
+  it("highlights nothing without a query", () => {
+    const [row] = jobRows([job({ id: 1, locations: ["Geneva"] })], "inbox", emptyFilter, "");
+
+    expect(row!.highlights).toEqual({ title: [], company: [], locations: [[]] });
+  });
+});
