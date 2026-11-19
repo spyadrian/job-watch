@@ -21,6 +21,46 @@ export interface Job {
   outdated: boolean;
 }
 
+/** Every supported Source type; one Source adapter each (src/server/sources/). */
+export type SourceType = "greenhouse";
+
+/** Which Source a Company follows: its type plus slug (ATS) or feed URL (RSS/Atom). */
+export interface SourceRef {
+  type: SourceType;
+  key: string;
+}
+
+/** One possible Source found by discovery, with its job count from an actual read. */
+export interface Candidate {
+  source: SourceRef;
+  /** Human-readable Source type, e.g. "Greenhouse". */
+  sourceLabel: string;
+  suggestedName: string;
+  jobCount: number;
+  /** Name of the Company already following this Source, or null. */
+  alreadyFollowing: string | null;
+}
+
+/** POST /api/companies/discover { input } → */
+export interface DiscoverResponse {
+  candidates: Candidate[];
+}
+
+export interface Company {
+  id: number;
+  name: string;
+  source: SourceRef;
+  sourceLabel: string;
+  createdAt: string;
+}
+
+/** POST /api/companies { source, name } → 201 */
+export interface CreateCompanyResponse {
+  company: Company;
+  /** How many Jobs were stored for the new Company. */
+  jobCount: number;
+}
+
 export interface Filter {
   /** Each City filter is a list of spellings, e.g. ["Geneva", "Genève", "Genf"]. */
   cities: string[][];
