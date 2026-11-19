@@ -3,6 +3,9 @@
 
 export type JobStatus = "unseen" | "seen" | "saved" | "applied";
 
+/** POST /api/jobs/:id/status { action }: the actions of the spec's status table. */
+export type JobAction = "seen" | "unseen" | "save" | "unsave" | "apply" | "unapply";
+
 export interface Job {
   id: number;
   /** The Company's current display name (or its kept name once the Company is removed). */
