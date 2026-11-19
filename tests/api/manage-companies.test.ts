@@ -66,14 +66,13 @@ describe("listing followed Companies", () => {
 describe("a Company whose Source failed on the last read", () => {
   it("carries the reason and the time of the failure", async () => {
     const t = await setup();
-    const acme = await t.follow("acme", "Acme");
-    // Nothing in the API records a failed read yet (refresh is ticket 05).
-    t.db
-      .prepare("UPDATE company SET last_error = ?, last_error_at = ? WHERE id = ?")
-      .run('the Greenhouse board "acme" answered 500', "2026-01-15T10:00:00.000Z", acme.id);
+    await t.follow("acme", "Acme");
+    t.sources[greenhouse("acme")] = { status: 500, body: "boom" };
+    t.clock.set("2026-01-15T10:00:00Z");
+    await (await t.request("POST", "/api/refresh")).text();
 
     expect((await t.companies())[0]!.lastError).toEqual({
-      message: 'the Greenhouse board "acme" answered 500',
+      message: 'The Greenhouse board "acme" answered with an error (HTTP 500)',
       at: "2026-01-15T10:00:00.000Z",
     });
   });

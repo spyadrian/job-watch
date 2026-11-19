@@ -1,9 +1,11 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Job } from "../../src/shared/types.ts";
 import { createTestApp } from "../support/test-app.ts";
 
 const ACME_JOBS = "https://boards-api.greenhouse.io/v1/boards/acme/jobs";
-const acme = { [ACME_JOBS]: { file: "tests/fixtures/sources/greenhouse/acme.json", contentType: "application/json" } };
+const ACME_FILE = "tests/fixtures/sources/greenhouse/acme.json";
+const acme = { [ACME_JOBS]: { file: ACME_FILE, contentType: "application/json" } };
 
 /** A test app following Acme (3 Unseen Jobs), with helpers to act on one of its Jobs. */
 async function setup() {
@@ -23,9 +25,13 @@ async function setup() {
   async function job(jobId = id): Promise<Job | undefined> {
     return (await listJobs()).find((j) => j.id === jobId);
   }
-  /** Seeds the Outdated flag; nothing in the API can set it yet (refresh is ticket 05). */
-  function makeOutdated(jobId = id) {
-    app.db.prepare("UPDATE job SET outdated = 1 WHERE id = ?").run(jobId);
+  /** Makes the Job Outdated the way it happens for real: it is gone from its Source at the next refresh. */
+  async function makeOutdated(jobId = id) {
+    const gone = (await job(jobId))!.url;
+    const board = JSON.parse(readFileSync(ACME_FILE, "utf8")) as { jobs: { absolute_url: string }[] };
+    app.sources[ACME_JOBS] = { body: { jobs: board.jobs.filter((j) => j.absolute_url !== gone) } };
+    await (await app.request("POST", "/api/refresh")).text();
+    expect(await job(jobId)).toMatchObject({ outdated: true });
   }
   return { ...app, id, act, job, listJobs, makeOutdated };
 }
@@ -125,7 +131,7 @@ describe("status changes on an Outdated Job", () => {
   it("Un-save deletes an Outdated Job instead of moving it to Seen", async () => {
     const t = await setup();
     await reach(t, ["save"]);
-    t.makeOutdated();
+    await t.makeOutdated();
 
     const res = await t.act("unsave");
 
@@ -136,7 +142,7 @@ describe("status changes on an Outdated Job", () => {
   it("Un-mark Applied without the flag deletes an Outdated Job", async () => {
     const t = await setup();
     await reach(t, ["apply"]);
-    t.makeOutdated();
+    await t.makeOutdated();
 
     const res = await t.act("unapply");
 
@@ -147,7 +153,7 @@ describe("status changes on an Outdated Job", () => {
   it("Un-mark Applied with the flag moves it back to Saved, still Outdated", async () => {
     const t = await setup();
     await reach(t, ["save", "apply"]);
-    t.makeOutdated();
+    await t.makeOutdated();
 
     const res = await t.act("unapply");
 
@@ -158,7 +164,7 @@ describe("status changes on an Outdated Job", () => {
   it("Mark Applied on a Saved Outdated Job keeps it Outdated", async () => {
     const t = await setup();
     await reach(t, ["save"]);
-    t.makeOutdated();
+    await t.makeOutdated();
 
     const res = await t.act("apply");
 
