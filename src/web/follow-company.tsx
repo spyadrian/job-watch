@@ -9,6 +9,15 @@ type Step =
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
+/** Job board kinds named in the hint; one line per supported ATS. */
+const SUPPORTED_BOARDS = [
+  "Greenhouse",
+  "Lever",
+  "Ashby",
+  "SmartRecruiters",
+];
+const supportedBoards = new Intl.ListFormat("en", { type: "disjunction" }).format(SUPPORTED_BOARDS);
+
 /**
  * The add form of the Companies tab: paste a link, see "N jobs found" with an
  * editable name, then Follow or Cancel. Nothing is saved before Follow.
@@ -74,7 +83,7 @@ export function FollowCompany({ onFollowed }: { onFollowed: () => void }) {
   return (
     <section aria-labelledby={`${ids}-heading`} className="follow-company form-section">
       <h2 id={`${ids}-heading`}>Follow a Company</h2>
-      <p className="hint">Paste the link of a Greenhouse job board or of one of its Jobs.</p>
+      <p className="hint">Paste the link of a {supportedBoards} job board or of one of its Jobs.</p>
       <form className="inline-form" onSubmit={onFind} noValidate>
         <label className="grow">
           <span>Link</span>

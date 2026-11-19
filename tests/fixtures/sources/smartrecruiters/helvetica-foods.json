@@ -1,0 +1,52 @@
+{
+  "offset": 0,
+  "limit": 100,
+  "totalFound": 3,
+  "content": [
+    {
+      "id": "744000100000001",
+      "name": "Food Scientist",
+      "uuid": "0b1c2d3e-0000-4000-8000-000000000001",
+      "refNumber": "REF101",
+      "company": { "identifier": "HelveticaFoods", "name": "Helvetica Foods AG" },
+      "releasedDate": "2026-01-08T14:00:00.000Z",
+      "location": {
+        "city": "Vevey",
+        "region": "Vaud",
+        "country": "ch",
+        "remote": false,
+        "hybrid": false,
+        "fullLocation": "Vevey, Vaud, Switzerland"
+      },
+      "department": { "id": "101", "label": "R&D" },
+      "typeOfEmployment": { "id": "permanent", "label": "Full-time" },
+      "visibility": "PUBLIC",
+      "ref": "https://api.smartrecruiters.com/v1/companies/helveticafoods/postings/744000100000001"
+    },
+    {
+      "id": "744000100000002",
+      "name": "Supply Chain Planner",
+      "uuid": "0b1c2d3e-0000-4000-8000-000000000002",
+      "refNumber": "REF102",
+      "company": { "identifier": "HelveticaFoods", "name": "Helvetica Foods AG" },
+      "releasedDate": "2026-01-10T16:45:00.000Z",
+      "location": { "city": "Basel", "region": "BS", "country": "ch", "remote": false },
+      "department": { "id": "102", "label": "Operations" },
+      "typeOfEmployment": { "id": "permanent", "label": "Full-time" },
+      "visibility": "PUBLIC",
+      "ref": "https://api.smartrecruiters.com/v1/companies/helveticafoods/postings/744000100000002"
+    },
+    {
+      "id": "744000100000003",
+      "name": "Brand Manager",
+      "uuid": "0b1c2d3e-0000-4000-8000-000000000003",
+      "refNumber": "REF103",
+      "company": { "identifier": "HelveticaFoods", "name": "Helvetica Foods AG" },
+      "location": { "remote": true },
+      "department": { "id": "103", "label": "Marketing" },
+      "typeOfEmployment": { "id": "permanent", "label": "Full-time" },
+      "visibility": "PUBLIC",
+      "ref": "https://api.smartrecruiters.com/v1/companies/helveticafoods/postings/744000100000003"
+    }
+  ]
+}

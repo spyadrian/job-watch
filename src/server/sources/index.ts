@@ -4,6 +4,7 @@
 import { greenhouse } from "./greenhouse.ts";
 import { ashby } from "./ashby.ts";
 import { lever, leverEu } from "./lever.ts";
+import { smartrecruiters } from "./smartrecruiters.ts";
 import type { SourceAdapter, SourceType } from "./types.ts";
 
 export const adapters: readonly SourceAdapter[] = [
@@ -11,6 +12,7 @@ export const adapters: readonly SourceAdapter[] = [
   lever,
   leverEu,
   ashby,
+  smartrecruiters,
 ];
 
 export function adapterFor(type: string): SourceAdapter | undefined {
