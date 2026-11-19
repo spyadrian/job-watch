@@ -91,6 +91,39 @@ test("e, s and a triage the selected Job, the next Job takes its place, and u un
   await expectCounts(page, { Saved: 0, Seen: 1 });
 });
 
+test("Show 50 more pages the list, j past the last shown Job too, and Mark all as seen takes the shown Jobs", async ({
+  page,
+}) => {
+  await follow(page, "manyroles", "Many Roles");
+  await page.goto("/");
+  await expect(rows(page)).toHaveCount(50);
+  await expect(page.getByText("Showing 50 of 55")).toBeVisible();
+
+  // The button shows the rest.
+  await page.getByRole("button", { name: "Show 5 more" }).click();
+  await expect(rows(page)).toHaveCount(55);
+  await expect(page.getByRole("button", { name: /Show \d+ more/ })).toHaveCount(0);
+
+  // j past the 50th Job shows the next page and keeps going.
+  await page.reload();
+  await expect(rows(page)).toHaveCount(50);
+  for (let i = 0; i < 50; i++) await page.keyboard.press("j");
+  await expect(rows(page)).toHaveCount(50);
+  await expect(selected(page)).toBeFocused();
+  await page.keyboard.press("j");
+  await expect(rows(page)).toHaveCount(55);
+  await expect(selected(page)).toBeFocused();
+  await expect(rows(page).nth(50)).toHaveAttribute("aria-current", "true");
+
+  // Mark all as seen marks the 50 Jobs shown, not the 5 beyond the page.
+  await page.reload();
+  await expect(rows(page)).toHaveCount(50);
+  await page.getByRole("button", { name: "Mark all as seen" }).click();
+  await expectCounts(page, { Inbox: 5, Seen: 50 });
+  await expect(rows(page)).toHaveCount(5);
+  await expect(page.getByRole("status")).toContainText("Marked 50 Jobs as seen");
+});
+
 test("shortcuts don't fire while typing in a text field", async ({ page }) => {
   await follow(page, "acme", "Acme");
   await page.goto("/");

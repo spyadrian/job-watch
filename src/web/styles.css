@@ -113,7 +113,7 @@ body {
   overflow-y: auto;
 }
 
-.panel:focus-visible {
+.panel-inner:focus-visible {
   outline-offset: -2px;
 }
 
@@ -773,8 +773,8 @@ mark.hl-search.hl-boosted {
 .chip button {
   display: inline-grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   font: inherit;
   line-height: 1;
   color: var(--muted);

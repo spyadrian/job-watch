@@ -95,14 +95,14 @@ export function App() {
           ))}
         </div>
       </nav>
-      <main
-        role="tabpanel"
-        id={`panel-${current.id}`}
-        aria-labelledby={`tab-${current.id}`}
-        tabIndex={0}
-        className="panel"
-      >
-        <div className="panel-inner">
+      <main className="panel">
+        <div
+          role="tabpanel"
+          id={`panel-${current.id}`}
+          aria-labelledby={`tab-${current.id}`}
+          tabIndex={0}
+          className="panel-inner"
+        >
           {active === "companies" ? (
             <>
               <FollowCompany
