@@ -1,6 +1,7 @@
 // The pure job-list module: no DOM, no network. It owns every Filter, sort and
 // search rule; the UI only paginates and renders its output.
 import type { Filter, Job, JobStatus } from "../shared/types.ts";
+import { isBoosted, keywordHighlights, passesFilter } from "./filter.ts";
 import { matchesSearch, searchHighlights, searchWords } from "./search.ts";
 
 export type { Filter, Job, JobStatus };
@@ -36,13 +37,22 @@ const statusOfList: Record<ListKind, JobStatus> = {
 };
 
 /** The ordered rows to show for one list. */
-export function jobRows(jobs: readonly Job[], list: ListKind, _filter: Filter, query: string): JobRow[] {
+export function jobRows(jobs: readonly Job[], list: ListKind, filter: Filter, query: string): JobRow[] {
+  const inbox = list === "inbox";
   const words = searchWords(query);
   return jobs
     .filter((job) => job.status === statusOfList[list])
+    .filter((job) => !inbox || passesFilter(job, filter))
     .filter((job) => matchesSearch(job, words))
-    .sort(compareJobs)
-    .map((job) => ({ job, highlights: searchHighlights(job, words) }));
+    .map((job) => ({ job, boosted: inbox && isBoosted(job, filter) }))
+    .sort((a, b) => Number(b.boosted) - Number(a.boosted) || compareJobs(a.job, b.job))
+    .map(({ job }) => {
+      const highlights = searchHighlights(job, words);
+      highlights.title = [...keywordHighlights(job.title, filter), ...highlights.title].sort(
+        (a, b) => a.start - b.start || a.end - b.end,
+      );
+      return { job, highlights };
+    });
 }
 
 const titleCollator = new Intl.Collator("en", { sensitivity: "base", numeric: true });

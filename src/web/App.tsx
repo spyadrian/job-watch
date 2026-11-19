@@ -4,7 +4,8 @@ import { call } from "./api.ts";
 import { CompaniesSection, useCompanies } from "./companies.tsx";
 import { FollowCompany } from "./follow-company.tsx";
 import { useGlobalKeys } from "./global-keys.ts";
-import { emptyFilter, jobRows } from "./job-list.ts";
+import { FilterPanel, useFilter } from "./filter-panel.tsx";
+import { jobRows } from "./job-list.ts";
 import { JobListView } from "./job-list-view.tsx";
 import { StatusToast, useStatusChanges } from "./job-status.tsx";
 import { SearchBox } from "./search-box.tsx";
@@ -28,6 +29,7 @@ export function App() {
   const jobs = useJobs();
   const companies = useCompanies(jobs.reload);
   const status = useStatusChanges(jobs.setJobs);
+  const filter = useFilter();
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -82,7 +84,7 @@ export function App() {
             >
               {tab.label}
               {tab.id !== "companies" && (
-                <span className="count"> {jobRows(jobs.jobs, tab.id, emptyFilter, "").length}</span>
+                <span className="count"> {jobRows(jobs.jobs, tab.id, filter.filter, "").length}</span>
               )}
             </button>
           ))}
@@ -103,6 +105,7 @@ export function App() {
                   jobs.reload();
                   companies.reload();
                 }}
+                onAddShortcut={shortcuts.add}
               />
               <CompaniesSection state={companies} />
               <ShortcutsSection state={shortcuts} />
@@ -114,14 +117,17 @@ export function App() {
                   {jobs.loadError}
                 </p>
               )}
+              {active === "inbox" && <FilterPanel state={filter} />}
               <SearchBox ref={searchRef} value={query} onChange={setQuery} />
               <JobListView
                 key={`${active}:${query}`}
                 jobs={jobs.jobs}
                 list={active}
+                filter={filter.filter}
                 query={query}
                 empty={current.empty}
                 onAct={status.act}
+                onMarkAllSeen={status.markAllSeen}
               />
             </>
           )}

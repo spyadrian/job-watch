@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emptyFilter, jobRows, type Job } from "../../src/web/job-list.ts";
+import { emptyFilter, jobRows, type Filter, type Job } from "../../src/web/job-list.ts";
 
 function job(overrides: Partial<Job> & Pick<Job, "id">): Job {
   return {
@@ -67,6 +67,151 @@ describe("job list", () => {
 
       expect(ids(jobs)).toEqual([2, 1]);
     });
+  });
+});
+
+describe("the Filter", () => {
+  const filter = (f: Partial<Filter>): Filter => ({ ...emptyFilter, ...f });
+  const inbox = (jobs: Job[], f: Partial<Filter>) => jobRows(jobs, "inbox", filter(f), "").map((r) => r.job.id);
+
+  describe("City filters", () => {
+    it("pass a Job whose location contains any spelling, ignoring accents and case", () => {
+      const jobs = [
+        job({ id: 1, locations: ["GENÈVE, Switzerland"] }),
+        job({ id: 2, locations: ["Genf"] }),
+        job({ id: 3, locations: ["Lausanne"] }),
+      ];
+
+      expect(inbox(jobs, { cities: [["Geneve", "Genf"]] })).toEqual([1, 2]);
+    });
+
+    it("combine with OR and pass a Job if any of its locations matches", () => {
+      const jobs = [
+        job({ id: 1, locations: ["Zürich, Switzerland"] }),
+        job({ id: 2, locations: ["Berlin", "Lausanne"] }),
+        job({ id: 3, locations: ["Berlin", "Paris"] }),
+      ];
+
+      expect(inbox(jobs, { cities: [["Zurich"], ["Lausanne"]] })).toEqual([1, 2]);
+    });
+
+    it("always pass Jobs with no location or a remote location", () => {
+      const jobs = [
+        job({ id: 1, locations: [] }),
+        job({ id: 2, locations: ["Remote - Europe"] }),
+        job({ id: 3, locations: ["Berlin", "REMOTE"] }),
+        job({ id: 4, locations: ["Berlin"] }),
+      ];
+
+      expect(inbox(jobs, { cities: [["Geneva"]] })).toEqual([1, 2, 3]);
+    });
+
+    it("pass every Job when there is no City filter", () => {
+      expect(inbox([job({ id: 1, locations: ["Berlin"] })], { cities: [] })).toEqual([1]);
+    });
+  });
+
+  describe("keywords", () => {
+    it("Required: the title must contain at least one, ignoring accents and case", () => {
+      const jobs = [
+        job({ id: 1, title: "Développeur Frontend" }),
+        job({ id: 2, title: "Senior TYPESCRIPT Engineer" }),
+        job({ id: 3, title: "Product Manager" }),
+      ];
+
+      expect(inbox(jobs, { required: ["developpeur", "TypeScript"] })).toEqual([1, 2]);
+    });
+
+    it("Excluded: a title containing any is kept out", () => {
+      const jobs = [
+        job({ id: 1, title: "Software Engineer" }),
+        job({ id: 2, title: "Stagiaire Software Engineer" }),
+        job({ id: 3, title: "Lead Engineer" }),
+      ];
+
+      expect(inbox(jobs, { excluded: ["STAGIAIRE", "lead"] })).toEqual([1]);
+    });
+
+    it("match the title only, not the Company or locations", () => {
+      const jobs = [job({ id: 1, title: "Engineer", companyName: "Rust Corp", locations: ["Rust"] })];
+
+      expect(inbox(jobs, { required: ["rust"] })).toEqual([]);
+      expect(inbox(jobs, { excluded: ["rust"] })).toEqual([1]);
+    });
+
+    it("Boosted: matching Jobs sort first, then the usual order", () => {
+      const jobs = [
+        job({ id: 1, title: "Data Engineer", firstFetchedAt: "2026-01-12T09:00:00Z" }),
+        job({ id: 2, title: "React Developer", firstFetchedAt: "2026-01-10T09:00:00Z" }),
+        job({ id: 3, title: "Product Manager", firstFetchedAt: "2026-01-11T09:00:00Z" }),
+        job({ id: 4, title: "Senior réact engineer", firstFetchedAt: "2026-01-11T09:00:00Z" }),
+      ];
+
+      expect(inbox(jobs, { boosted: ["React"] })).toEqual([4, 2, 1, 3]);
+    });
+
+    it("ignore blank keywords and spellings", () => {
+      const jobs = [job({ id: 1, title: "Engineer", locations: ["Berlin"] })];
+
+      expect(inbox(jobs, { required: [" "], excluded: [""], cities: [["", "Geneva"]] })).toEqual([]);
+      expect(inbox(jobs, { required: [" "], excluded: [""] })).toEqual([1]);
+    });
+  });
+
+  describe("highlights", () => {
+    it("mark Required (green) and Boosted (yellow) keywords in the title, on the original text", () => {
+      const jobs = [job({ id: 1, title: "Développeur React / react native" })];
+      const [row] = jobRows(jobs, "inbox", filter({ required: ["developpeur"], boosted: ["REACT"] }), "");
+
+      expect(row!.highlights.title).toEqual([
+        { start: 0, end: 11, kind: "required" },
+        { start: 12, end: 17, kind: "boosted" },
+        { start: 20, end: 25, kind: "boosted" },
+      ]);
+      expect(row!.highlights.company).toEqual([]);
+      expect(row!.highlights.locations).toEqual([[]]);
+    });
+
+    it("show in every list, not only the Inbox", () => {
+      const jobs = [job({ id: 1, status: "applied", title: "Rust Engineer" })];
+      const [row] = jobRows(jobs, "applied", filter({ required: ["rust"] }), "");
+
+      expect(row!.highlights.title).toEqual([{ start: 0, end: 4, kind: "required" }]);
+    });
+
+    it("keep their place when accents decompose (combining marks in the title)", () => {
+      const title = "Ingénieur Zürich"; // "Ingénieur Zürich" with combining accents
+      const [row] = jobRows([job({ id: 1, title })], "inbox", filter({ boosted: ["zurich"] }), "");
+
+      expect(row!.highlights.title).toEqual([{ start: 11, end: 18, kind: "boosted" }]);
+    });
+  });
+
+  it("combines with search: both must pass, and keyword and search highlights share the row", () => {
+    const jobs = [
+      job({ id: 1, title: "React Engineer", companyName: "Acme" }),
+      job({ id: 2, title: "React Engineer", companyName: "Globex" }),
+      job({ id: 3, title: "Intern", companyName: "Acme" }),
+    ];
+
+    const rows = jobRows(jobs, "inbox", filter({ boosted: ["react"], excluded: ["intern"] }), "acme engineer");
+
+    expect(rows.map((r) => r.job.id)).toEqual([1]);
+    expect(rows[0]!.highlights.title).toEqual([
+      { start: 0, end: 5, kind: "boosted" },
+      { start: 6, end: 14, kind: "search" },
+    ]);
+    expect(rows[0]!.highlights.company).toEqual([{ start: 0, end: 4, kind: "search" }]);
+  });
+
+  it("applies only to the Inbox: other lists show everything, in the usual order", () => {
+    const jobs = [
+      job({ id: 1, status: "saved", title: "Intern", locations: ["Berlin"], firstFetchedAt: "2026-01-12T09:00:00Z" }),
+      job({ id: 2, status: "saved", title: "Boosted role", locations: ["Berlin"], firstFetchedAt: "2026-01-10T09:00:00Z" }),
+    ];
+    const f = filter({ cities: [["Geneva"]], required: ["engineer"], excluded: ["intern"], boosted: ["boosted"] });
+
+    expect(jobRows(jobs, "saved", f, "").map((r) => r.job.id)).toEqual([1, 2]);
   });
 });
 
