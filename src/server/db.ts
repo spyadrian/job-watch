@@ -60,6 +60,10 @@ const migrations: string[] = [
      excluded TEXT NOT NULL DEFAULT '[]'
    );
    INSERT INTO filter (id) VALUES (1);`,
+  // Default Shortcuts, inserted once on first start; removing them later is final.
+  `INSERT INTO shortcut (name, url, position) VALUES
+     ('Jobup', 'https://www.jobup.ch', 0),
+     ('Indeed Switzerland', 'https://ch.indeed.com', 1);`,
 ];
 
 function migrate(db: Database): void {

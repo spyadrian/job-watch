@@ -5,7 +5,7 @@ import { discover, DiscoveryError } from "../discovery.ts";
 import type { SourceRef } from "../../shared/types.ts";
 
 /** Registers the Companies routes on the /api sub-app. */
-export function companyRoutes(api: Hono, deps: AppDeps): void {
+export function registerCompanyRoutes(api: Hono, deps: AppDeps): void {
   /** { input } → { candidates }. Reads Sources but saves nothing. */
   api.post("/companies/discover", async (c) => {
     const body = (await c.req.json().catch(() => null)) as { input?: unknown } | null;
