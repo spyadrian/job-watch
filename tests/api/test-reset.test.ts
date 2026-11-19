@@ -29,4 +29,33 @@ describe("test-only reset", () => {
     const again = await request("POST", "/api/companies", { source: { type: "greenhouse", key: "acme" }, name: "Acme" });
     expect(again.status).toBe(201);
   });
+
+  it("forgets a running refresh: the next refresh starts afresh and the old one writes nothing", async () => {
+    let release = () => {};
+    let hold = false;
+    const { request, app } = createTestApp({
+      sources: acme,
+      testReset: true,
+      wrapFetch: (recorded) => async (input, init) => {
+        if (hold) await new Promise<void>((go) => (release = go));
+        return recorded(input, init);
+      },
+    });
+    await request("POST", "/api/companies", { source: { type: "greenhouse", key: "acme" }, name: "Acme" });
+    hold = true;
+    const stale = app.request("/api/refresh", { method: "POST" });
+    await new Promise((r) => setTimeout(r, 5));
+
+    expect((await request("POST", "/api/test/reset")).status).toBe(204);
+    hold = false;
+    const fresh = await (await request("POST", "/api/refresh")).text();
+    release();
+    await (await stale).text();
+
+    expect(fresh.trim().split("\n").map((line) => JSON.parse(line))).toEqual([
+      { type: "start", total: 0 },
+      { type: "done", summary: { new: 0, outdated: 0, failed: 0 } },
+    ]);
+    expect(await (await request("GET", "/api/jobs")).json()).toEqual({ jobs: [] });
+  });
 });

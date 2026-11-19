@@ -26,6 +26,8 @@ export interface SourceRead {
 
 export interface SourceContext {
   fetch: typeof globalThis.fetch;
+  /** Per-request timeout in ms; defaults to SOURCE_TIMEOUT_MS (tests shorten it). */
+  sourceTimeoutMs?: number;
 }
 
 export interface SourceAdapter {

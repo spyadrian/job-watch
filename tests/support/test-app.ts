@@ -26,6 +26,10 @@ export interface TestAppOptions {
   now?: string | Date;
   /** Enables the test-only POST /api/test/reset. */
   testReset?: boolean;
+  /** Wraps the recorded fetch, e.g. to hold or slow down answers. */
+  wrapFetch?: (recorded: typeof globalThis.fetch) => typeof globalThis.fetch;
+  sourceTimeoutMs?: number;
+  refreshConcurrency?: number;
 }
 
 /**
@@ -38,13 +42,22 @@ export function createTestApp(options: TestAppOptions = {}) {
   const clock = new TestClock(options.now);
   const db = openDatabase(":memory:");
   // Rebuilt per call so tests can change `sources` between requests (e.g. a Job disappearing).
+  const recorded: typeof globalThis.fetch = (input, init) => createRecordedFetch(sources)(input, init);
+  const inner = options.wrapFetch ? options.wrapFetch(recorded) : recorded;
   const fetch: typeof globalThis.fetch = (input, init) => {
     requested.push(input instanceof Request ? input.url : String(input));
-    return createRecordedFetch(sources)(input, init);
+    return inner(input, init);
   };
   /** Every URL the server fetched, in order, exactly as requested. */
   const requested: string[] = [];
-  const app = createApp({ db, fetch, clock, testReset: options.testReset });
+  const app = createApp({
+    db,
+    fetch,
+    clock,
+    testReset: options.testReset,
+    sourceTimeoutMs: options.sourceTimeoutMs,
+    refreshConcurrency: options.refreshConcurrency,
+  });
 
   async function request(method: string, path: string, body?: unknown): Promise<Response> {
     const init: RequestInit = { method };

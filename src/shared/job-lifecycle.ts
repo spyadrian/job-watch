@@ -57,6 +57,14 @@ export function transition(from: JobState, action: JobAction): Transition {
   throw new TransitionError(`Can't ${actionLabel[action]} a Job that is ${status[0]!.toUpperCase()}${status.slice(1)}.`);
 }
 
+/**
+ * A Job no longer in its Source: an Unseen or Seen Job is deleted; a Saved or
+ * Applied Job is kept, flagged Outdated.
+ */
+export function becomeOutdated(from: JobState): { outdated: true } | { deleted: true } {
+  return from.status === "unseen" || from.status === "seen" ? { deleted: true } : { outdated: true };
+}
+
 /** Whether the status table allows `action` from this state. */
 export function canApply(from: JobState, action: JobAction): boolean {
   try {
