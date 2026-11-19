@@ -8,6 +8,7 @@
   --border: #dedcd6;
   --accent: #2456c7;
   --focus: #2456c7;
+  --error: #b42318;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -20,6 +21,7 @@
     --border: #34332f;
     --accent: #8fb0ff;
     --focus: #8fb0ff;
+    --error: #ff8a80;
   }
 }
 
@@ -102,4 +104,161 @@ body {
   color: var(--muted);
   margin: 48px 0;
   text-align: center;
+}
+
+/* Shortcuts (ticket 09) */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.header-shortcuts {
+  margin-left: auto;
+  min-width: 0;
+}
+
+.header-shortcuts ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+.header-shortcuts a,
+.shortcut-name {
+  color: var(--accent);
+  text-underline-offset: 2px;
+}
+
+.shortcuts {
+  margin-top: 32px;
+}
+
+.shortcuts h2 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+}
+
+.hint {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.error {
+  margin: 8px 0 0;
+  color: var(--error);
+  font-size: 0.9rem;
+}
+
+.shortcut-list {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.shortcut-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 10px 12px;
+}
+
+.shortcut-row + .shortcut-row {
+  border-top: 1px solid var(--border);
+}
+
+.shortcut-row .error {
+  flex-basis: 100%;
+}
+
+.shortcut-url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.row-actions,
+.shortcut-rename {
+  display: flex;
+  gap: 6px;
+}
+
+.shortcut-rename {
+  flex: 1;
+}
+
+.shortcut-rename input {
+  flex: 1;
+  min-width: 0;
+}
+
+.shortcut-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 12px;
+}
+
+.shortcut-add label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.shortcut-add label:last-of-type {
+  flex: 1;
+  min-width: 200px;
+}
+
+.shortcuts input {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.shortcuts button {
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.shortcuts button:hover {
+  border-color: var(--muted);
+}
+
+.shortcuts button[type="submit"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--surface);
+}
+
+.shortcuts h2:focus {
+  outline: none;
 }

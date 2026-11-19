@@ -1,4 +1,5 @@
 import { useRef, useState, type KeyboardEvent } from "react";
+import { HeaderShortcuts, ShortcutsSection, useShortcuts } from "./shortcuts.tsx";
 
 type TabId = "inbox" | "saved" | "applied" | "seen" | "companies";
 
@@ -14,6 +15,7 @@ export function App() {
   const [active, setActive] = useState<TabId>("inbox");
   const tabRefs = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({});
   const current = tabs.find((t) => t.id === active)!;
+  const shortcuts = useShortcuts();
 
   // WAI-ARIA tabs pattern: arrow keys move between tabs, Home/End jump.
   function onTabKeyDown(e: KeyboardEvent<HTMLButtonElement>, index: number) {
@@ -33,6 +35,7 @@ export function App() {
     <>
       <header className="app-header">
         <h1 className="brand">Job Watch</h1>
+        <HeaderShortcuts shortcuts={shortcuts.shortcuts} />
       </header>
       <nav className="tabs-bar">
         <div role="tablist" aria-label="Lists" className="tabs">
@@ -65,6 +68,7 @@ export function App() {
         className="panel"
       >
         <p className="empty">{current.empty}</p>
+        {active === "companies" && <ShortcutsSection state={shortcuts} />}
       </main>
     </>
   );
