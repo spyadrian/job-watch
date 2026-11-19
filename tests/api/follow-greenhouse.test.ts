@@ -53,10 +53,10 @@ describe("discovering a Greenhouse Company from a link", () => {
     expect(await res.json()).toEqual({ candidates: [] });
   });
 
-  it("rejects input that isn't a link with a clear message", async () => {
+  it("rejects a link it can't open with a clear message", async () => {
     const { request } = createTestApp({ sources: acme });
 
-    const res = await request("POST", "/api/companies/discover", { input: "not a link" });
+    const res = await request("POST", "/api/companies/discover", { input: "mailto://jobs@acme.example" });
 
     expect(res.status).toBe(400);
     expect((await res.json()).error).toMatch(/doesn't look like a link/);
@@ -109,6 +109,7 @@ describe("following a Greenhouse Company", () => {
         source: { type: "greenhouse", key: "acme" },
         sourceLabel: "Greenhouse",
         createdAt: "2026-01-15T09:00:00.000Z",
+        lastError: null,
       },
       jobCount: 3,
     });

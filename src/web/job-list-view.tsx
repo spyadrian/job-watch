@@ -166,6 +166,11 @@ function JobRowItem({
         <span className="job-company">
           <Highlighted text={job.companyName} highlights={highlights.company} />
         </span>
+        {job.outdated && (
+          <span className="badge-outdated" title="No longer published by its Source">
+            Outdated
+          </span>
+        )}
         {job.locations.length > 0 && (
           <span className="job-locations">
             {job.locations.map((location, i) => (
