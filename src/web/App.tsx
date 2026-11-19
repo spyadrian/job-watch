@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "re
 import type { Job } from "../shared/types.ts";
 import { call } from "./api.ts";
 import { FollowCompany } from "./follow-company.tsx";
+import { emptyFilter, jobRows } from "./job-list.ts";
 import { JobListView } from "./job-list-view.tsx";
+import { StatusToast, useStatusChanges } from "./job-status.tsx";
 import { HeaderShortcuts, ShortcutsSection, useShortcuts } from "./shortcuts.tsx";
 
 type TabId = "inbox" | "saved" | "applied" | "seen" | "companies";
@@ -21,6 +23,7 @@ export function App() {
   const current = tabs.find((t) => t.id === active)!;
   const shortcuts = useShortcuts();
   const jobs = useJobs();
+  const status = useStatusChanges(jobs.setJobs);
 
   // WAI-ARIA tabs pattern: arrow keys move between tabs, Home/End jump.
   function onTabKeyDown(e: KeyboardEvent<HTMLButtonElement>, index: number) {
@@ -61,6 +64,9 @@ export function App() {
               onKeyDown={(e) => onTabKeyDown(e, i)}
             >
               {tab.label}
+              {tab.id !== "companies" && (
+                <span className="count"> {jobRows(jobs.jobs, tab.id, emptyFilter, "").length}</span>
+              )}
             </button>
           ))}
         </div>
@@ -72,22 +78,25 @@ export function App() {
         tabIndex={0}
         className="panel"
       >
-        {active === "companies" ? (
-          <>
-            <FollowCompany onFollowed={jobs.reload} />
-            <ShortcutsSection state={shortcuts} />
-          </>
-        ) : (
-          <>
-            {jobs.loadError && (
-              <p role="alert" className="error">
-                {jobs.loadError}
-              </p>
-            )}
-            <JobListView key={active} jobs={jobs.jobs} list={active} empty={current.empty} />
-          </>
-        )}
+        <div className="panel-inner">
+          {active === "companies" ? (
+            <>
+              <FollowCompany onFollowed={jobs.reload} />
+              <ShortcutsSection state={shortcuts} />
+            </>
+          ) : (
+            <>
+              {jobs.loadError && (
+                <p role="alert" className="error">
+                  {jobs.loadError}
+                </p>
+              )}
+              <JobListView key={active} jobs={jobs.jobs} list={active} empty={current.empty} onAct={status.act} />
+            </>
+          )}
+        </div>
       </main>
+      <StatusToast toast={status.toast} onUndo={status.undo} />
     </>
   );
 }
@@ -107,5 +116,5 @@ function useJobs() {
   }, []);
 
   useEffect(reload, [reload]);
-  return { jobs, loadError, reload };
+  return { jobs, setJobs, loadError, reload };
 }

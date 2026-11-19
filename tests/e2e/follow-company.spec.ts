@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.ts";
 
 test("follows a Greenhouse Company by link and shows its Jobs in the Inbox", async ({ page }) => {
   await page.goto("/");
@@ -17,7 +17,7 @@ test("follows a Greenhouse Company by link and shows its Jobs in the Inbox", asy
   await section.getByRole("button", { name: "Cancel" }).click();
   await expect(section.getByText("3 jobs found")).toHaveCount(0);
   const before = await (await page.request.get("/api/jobs")).json();
-  expect(before.jobs.filter((j: { companyName: string }) => j.companyName.startsWith("Acme"))).toHaveLength(0);
+  expect(before.jobs).toHaveLength(0);
 
   // Found again, renamed, followed.
   await section.getByRole("button", { name: "Find jobs" }).click();
@@ -40,13 +40,12 @@ test("shows 50 Jobs at a time with Show more", async ({ page }) => {
   const res = await page.request.post("/api/companies", {
     data: { source: { type: "greenhouse", key: "manyroles" }, name: "Many Roles" },
   });
-  expect([201, 409]).toContain(res.status());
+  expect(res.status()).toBe(201);
 
   await page.goto("/");
   const rows = page.getByRole("listitem").filter({ hasText: "Many Roles" });
   await expect(rows).toHaveCount(50);
-  // Other tests may have added older Jobs too, so the button may offer more than 5.
-  await page.getByRole("button", { name: /Show \d+ more/ }).click();
+  await page.getByRole("button", { name: "Show 5 more" }).click();
   await expect(rows).toHaveCount(55);
   await expect(page.getByRole("button", { name: /Show \d+ more/ })).toHaveCount(0);
 });

@@ -24,6 +24,8 @@ export interface TestAppOptions {
   /** Recorded Source responses served by the injected fetch. Mutable via `sources`. */
   sources?: RecordedSources;
   now?: string | Date;
+  /** Enables the test-only POST /api/test/reset. */
+  testReset?: boolean;
 }
 
 /**
@@ -42,7 +44,7 @@ export function createTestApp(options: TestAppOptions = {}) {
   };
   /** Every URL the server fetched, in order, exactly as requested. */
   const requested: string[] = [];
-  const app = createApp({ db, fetch, clock });
+  const app = createApp({ db, fetch, clock, testReset: options.testReset });
 
   async function request(method: string, path: string, body?: unknown): Promise<Response> {
     const init: RequestInit = { method };

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.ts";
 
 test("manages Shortcuts in the Companies tab and opens them in a new tab from the header", async ({ page }) => {
   await page.goto("/");

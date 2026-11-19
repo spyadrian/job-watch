@@ -1,11 +1,23 @@
 import { useEffect, useState } from "react";
 import { emptyFilter, jobRows, type Job, type JobRow, type ListKind } from "./job-list.ts";
+import type { JobAction } from "../shared/types.ts";
+import { StatusButtons } from "./job-status.tsx";
 import { timeAgo } from "./time-ago.ts";
 
 export const PAGE_SIZE = 50;
 
 /** One list (Inbox, Saved, Applied, Seen): the job-list module's rows, 50 at a time. */
-export function JobListView({ jobs, list, empty }: { jobs: Job[]; list: ListKind; empty: string }) {
+export function JobListView({
+  jobs,
+  list,
+  empty,
+  onAct,
+}: {
+  jobs: Job[];
+  list: ListKind;
+  empty: string;
+  onAct: (job: Job, action: JobAction) => void;
+}) {
   const [shown, setShown] = useState(PAGE_SIZE);
   const now = useNow();
   const rows = jobRows(jobs, list, emptyFilter, "");
@@ -16,7 +28,7 @@ export function JobListView({ jobs, list, empty }: { jobs: Job[]; list: ListKind
     <>
       <ul className="job-list" aria-label={`${rows.length} Jobs`}>
         {visible.map((row) => (
-          <JobRowItem key={row.job.id} row={row} now={now} />
+          <JobRowItem key={row.job.id} row={row} now={now} onAct={onAct} />
         ))}
       </ul>
       {rows.length > shown && (
@@ -33,7 +45,15 @@ export function JobListView({ jobs, list, empty }: { jobs: Job[]; list: ListKind
   );
 }
 
-function JobRowItem({ row: { job }, now }: { row: JobRow; now: Date }) {
+function JobRowItem({
+  row: { job },
+  now,
+  onAct,
+}: {
+  row: JobRow;
+  now: Date;
+  onAct: (job: Job, action: JobAction) => void;
+}) {
   return (
     <li className="job-row">
       <a className="job-title" href={job.url} target="_blank" rel="noopener noreferrer">
@@ -55,6 +75,7 @@ function JobRowItem({ row: { job }, now }: { row: JobRow; now: Date }) {
           {timeAgo(job.firstFetchedAt, now)}
         </time>
       </div>
+      <StatusButtons job={job} onAct={onAct} />
     </li>
   );
 }

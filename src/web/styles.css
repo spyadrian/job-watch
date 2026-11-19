@@ -94,7 +94,30 @@ body {
   font-weight: 600;
 }
 
+/* App shell: header and tabs on top, the panel scrolls, the toast strip below it
+   (so the toast never covers the list). */
+#root {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+.app-header,
+.tabs-bar {
+  flex: none;
+}
+
 .panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.panel:focus-visible {
+  outline-offset: -2px;
+}
+
+.panel-inner {
   max-width: 960px;
   margin: 0 auto;
   padding: 24px 16px;
@@ -427,4 +450,98 @@ body {
 
 .more .hint {
   margin: 0;
+}
+
+/* Job statuses (ticket 03) */
+.tab {
+  white-space: nowrap;
+}
+
+.tab .count {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.job-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 16px;
+}
+
+.job-row > .job-meta {
+  grid-column: 1;
+}
+
+.status-buttons {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: flex;
+  gap: 6px;
+}
+
+.status-buttons button,
+.toast-undo {
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+
+.status-buttons button:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+.status-buttons button[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--surface);
+}
+
+.status-buttons button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@media (max-width: 560px) {
+  .job-row {
+    grid-template-columns: 1fr;
+  }
+
+  .status-buttons {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+.toast-region {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 16px;
+}
+
+.toast-region:not(:empty) {
+  padding-block: 8px 12px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.12);
+  font-size: 0.9rem;
+}
+
+.toast-undo {
+  color: var(--accent);
 }
