@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.ts";
 
 test("opens on the Inbox with the five tabs and empty states", async ({ page }) => {
   await page.goto("/");

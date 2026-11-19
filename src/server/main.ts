@@ -17,7 +17,13 @@ const webDir = process.env.JOB_WATCH_WEB_DIR ?? "dist/web";
 const recordedSources = process.env.JOB_WATCH_RECORDED_SOURCES;
 
 const fetchImpl = recordedSources ? loadRecordedFetch(recordedSources) : globalThis.fetch;
-const app = createApp({ db: openDatabase(dbPath), fetch: fetchImpl, clock: systemClock });
+// Recorded mode is the e2e suite's mode: it also gets the test-only reset endpoint.
+const app = createApp({
+  db: openDatabase(dbPath),
+  fetch: fetchImpl,
+  clock: systemClock,
+  testReset: Boolean(recordedSources),
+});
 
 app.use("/*", serveStatic({ root: webDir }));
 const indexHtml = readFileSync(resolve(webDir, "index.html"), "utf8");

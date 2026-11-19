@@ -66,6 +66,21 @@ const migrations: string[] = [
      ('Indeed Switzerland', 'https://ch.indeed.com', 1);`,
 ];
 
+/** Test-only: drops every table and replays the migrations, as on a first start. */
+export function resetDatabase(db: Database): void {
+  const tables = db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+    .all() as { name: string }[];
+  db.exec("PRAGMA foreign_keys = OFF");
+  try {
+    for (const { name } of tables) db.exec(`DROP TABLE "${name}"`);
+    db.exec("PRAGMA user_version = 0");
+  } finally {
+    db.exec("PRAGMA foreign_keys = ON");
+  }
+  migrate(db);
+}
+
 function migrate(db: Database): void {
   const row = db.prepare("PRAGMA user_version").get() as { user_version: number };
   for (let v = row.user_version; v < migrations.length; v++) {
