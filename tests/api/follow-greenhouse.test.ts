@@ -109,6 +109,7 @@ describe("following a Greenhouse Company", () => {
         source: { type: "greenhouse", key: "acme" },
         sourceLabel: "Greenhouse",
         createdAt: "2026-01-15T09:00:00.000Z",
+        lastError: null,
       },
       jobCount: 3,
     });

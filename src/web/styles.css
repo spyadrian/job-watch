@@ -431,6 +431,23 @@ body {
   color: var(--text);
 }
 
+.badge-outdated {
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* Followed Companies (ticket 04): reuses the Shortcuts list styles. */
+.companies {
+  margin-top: 32px;
+}
+
+.company-name {
+  font-weight: 600;
+}
+
 .job-location + .job-location::before {
   content: " · ";
 }

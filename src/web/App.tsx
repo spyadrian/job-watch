@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { Job } from "../shared/types.ts";
 import { call } from "./api.ts";
+import { CompaniesSection, useCompanies } from "./companies.tsx";
 import { FollowCompany } from "./follow-company.tsx";
 import { useGlobalKeys } from "./global-keys.ts";
 import { FilterPanel, useFilter } from "./filter-panel.tsx";
@@ -26,6 +27,7 @@ export function App() {
   const current = tabs.find((t) => t.id === active)!;
   const shortcuts = useShortcuts();
   const jobs = useJobs();
+  const companies = useCompanies(jobs.reload);
   const status = useStatusChanges(jobs.setJobs);
   const filter = useFilter();
   const [query, setQuery] = useState("");
@@ -98,7 +100,13 @@ export function App() {
         <div className="panel-inner">
           {active === "companies" ? (
             <>
-              <FollowCompany onFollowed={jobs.reload} />
+              <FollowCompany
+                onFollowed={() => {
+                  jobs.reload();
+                  companies.reload();
+                }}
+              />
+              <CompaniesSection state={companies} />
               <ShortcutsSection state={shortcuts} />
             </>
           ) : (
