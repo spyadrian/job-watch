@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import type { CompaniesResponse, Company, CompanyError } from "../shared/types.ts";
 import { call } from "./api.ts";
+import { ManagedRow } from "./managed-row.tsx";
 import { timeAgo } from "./time-ago.ts";
 
 export interface CompaniesState {
@@ -56,7 +57,7 @@ export function useCompanies(onJobsChanged: () => void): CompaniesState {
 export function CompaniesSection({ state }: { state: CompaniesState }) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   return (
-    <section aria-labelledby="companies-heading" className="shortcuts companies">
+    <section aria-labelledby="companies-heading" className="managed-section">
       <h2 id="companies-heading" ref={headingRef} tabIndex={-1}>
         Followed Companies
       </h2>
@@ -68,7 +69,7 @@ export function CompaniesSection({ state }: { state: CompaniesState }) {
       {state.companies.length === 0 ? (
         <p className="hint">You don't follow any Company yet.</p>
       ) : (
-        <ul className="shortcut-list">
+        <ul className="managed-list">
           {state.companies.map((c) => (
             <CompanyRow key={c.id} company={c} state={state} afterRemoveFocus={headingRef} />
           ))}
@@ -99,93 +100,16 @@ function CompanyRow({
   state: CompaniesState;
   afterRemoveFocus: RefObject<HTMLElement | null>;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(company.name);
-  const [error, setError] = useState<string | null>(null);
-  const renameRef = useRef<HTMLButtonElement>(null);
-  const returnFocus = useRef(false);
-
-  // After Save or Cancel, put focus back on the Rename button.
-  useEffect(() => {
-    if (!editing && returnFocus.current) {
-      returnFocus.current = false;
-      renameRef.current?.focus();
-    }
-  }, [editing]);
-
-  async function run(action: () => Promise<void>) {
-    try {
-      await action();
-      setError(null);
-      return true;
-    } catch (err) {
-      setError((err as Error).message);
-      return false;
-    }
-  }
-
-  async function onSave(e: FormEvent) {
-    e.preventDefault();
-    if (await run(() => state.rename(company.id, draft))) {
-      returnFocus.current = true;
-      setEditing(false);
-    }
-  }
-
-  function onCancel() {
-    setDraft(company.name);
-    setError(null);
-    returnFocus.current = true;
-    setEditing(false);
-  }
-
-  async function onRemove() {
-    if (await run(() => state.remove(company.id))) afterRemoveFocus.current?.focus();
-  }
-
   return (
-    <li className="shortcut-row">
-      {editing ? (
-        <form className="shortcut-rename" onSubmit={onSave} onKeyDown={(e) => e.key === "Escape" && onCancel()}>
-          <input
-            aria-label={`New name for ${company.name}`}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            autoFocus
-          />
-          <button type="submit">Save</button>
-          <button type="button" onClick={onCancel}>
-            Cancel
-          </button>
-        </form>
-      ) : (
-        <>
-          <span className="company-name">{company.name}</span>
-          <span className="shortcut-url">{company.sourceLabel}</span>
-          {company.lastError && <CompanyErrorBadge error={company.lastError} />}
-          <span className="row-actions">
-            <button
-              ref={renameRef}
-              type="button"
-              aria-label={`Rename ${company.name}`}
-              onClick={() => {
-                setDraft(company.name);
-                setEditing(true);
-              }}
-            >
-              Rename
-            </button>
-            <button type="button" aria-label={`Remove ${company.name}`} onClick={onRemove}>
-              Remove
-            </button>
-          </span>
-        </>
-      )}
-      {error && (
-        <p role="alert" className="error">
-          {error}
-        </p>
-      )}
-    </li>
+    <ManagedRow
+      name={company.name}
+      onRename={(name) => state.rename(company.id, name)}
+      onRemove={() => state.remove(company.id)}
+      afterRemoveFocus={afterRemoveFocus}
+    >
+      <span className="company-name">{company.name}</span>
+      <span className="managed-detail">{company.sourceLabel}</span>
+      {company.lastError && <CompanyErrorBadge error={company.lastError} />}
+    </ManagedRow>
   );
 }

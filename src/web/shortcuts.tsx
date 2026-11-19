@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
 import type { Shortcut } from "../shared/types.ts";
 import { call } from "./api.ts";
+import { ManagedRow } from "./managed-row.tsx";
 
 export interface ShortcutsState {
   shortcuts: Shortcut[];
@@ -93,7 +94,7 @@ export function ShortcutsSection({ state }: { state: ShortcutsState }) {
   }
 
   return (
-    <section aria-labelledby="shortcuts-heading" className="shortcuts">
+    <section aria-labelledby="shortcuts-heading" className="managed-section">
       <h2 id="shortcuts-heading" ref={headingRef} tabIndex={-1}>
         Shortcuts
       </h2>
@@ -102,7 +103,7 @@ export function ShortcutsSection({ state }: { state: ShortcutsState }) {
       {state.shortcuts.length === 0 ? (
         <p className="hint">No Shortcuts yet.</p>
       ) : (
-        <ul className="shortcut-list">
+        <ul className="managed-list">
           {state.shortcuts.map((s) => (
             <ShortcutRow key={s.id} shortcut={s} state={state} afterRemoveFocus={headingRef} />
           ))}
@@ -149,92 +150,15 @@ function ShortcutRow({
   state: ShortcutsState;
   afterRemoveFocus: RefObject<HTMLElement | null>;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(shortcut.name);
-  const [error, setError] = useState<string | null>(null);
-  const renameRef = useRef<HTMLButtonElement>(null);
-  const returnFocus = useRef(false);
-
-  // After Save or Cancel, put focus back on the Rename button.
-  useEffect(() => {
-    if (!editing && returnFocus.current) {
-      returnFocus.current = false;
-      renameRef.current?.focus();
-    }
-  }, [editing]);
-
-  async function run(action: () => Promise<void>) {
-    try {
-      await action();
-      setError(null);
-      return true;
-    } catch (err) {
-      setError((err as Error).message);
-      return false;
-    }
-  }
-
-  async function onSave(e: FormEvent) {
-    e.preventDefault();
-    if (await run(() => state.rename(shortcut.id, draft))) {
-      returnFocus.current = true;
-      setEditing(false);
-    }
-  }
-
-  function onCancel() {
-    setDraft(shortcut.name);
-    setError(null);
-    returnFocus.current = true;
-    setEditing(false);
-  }
-
-  async function onRemove() {
-    if (await run(() => state.remove(shortcut.id))) afterRemoveFocus.current?.focus();
-  }
-
   return (
-    <li className="shortcut-row">
-      {editing ? (
-        <form className="shortcut-rename" onSubmit={onSave} onKeyDown={(e) => e.key === "Escape" && onCancel()}>
-          <input
-            aria-label={`New name for ${shortcut.name}`}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            autoFocus
-          />
-          <button type="submit">Save</button>
-          <button type="button" onClick={onCancel}>
-            Cancel
-          </button>
-        </form>
-      ) : (
-        <>
-          <ShortcutLink shortcut={shortcut} className="shortcut-name" />
-          <span className="shortcut-url">{shortcut.url}</span>
-          <span className="row-actions">
-            <button
-              ref={renameRef}
-              type="button"
-              aria-label={`Rename ${shortcut.name}`}
-              onClick={() => {
-                setDraft(shortcut.name);
-                setEditing(true);
-              }}
-            >
-              Rename
-            </button>
-            <button type="button" aria-label={`Remove ${shortcut.name}`} onClick={onRemove}>
-              Remove
-            </button>
-          </span>
-        </>
-      )}
-      {error && (
-        <p role="alert" className="error">
-          {error}
-        </p>
-      )}
-    </li>
+    <ManagedRow
+      name={shortcut.name}
+      onRename={(name) => state.rename(shortcut.id, name)}
+      onRemove={() => state.remove(shortcut.id)}
+      afterRemoveFocus={afterRemoveFocus}
+    >
+      <ShortcutLink shortcut={shortcut} className="shortcut-name" />
+      <span className="managed-detail">{shortcut.url}</span>
+    </ManagedRow>
   );
 }

@@ -161,11 +161,11 @@ body {
   text-underline-offset: 2px;
 }
 
-.shortcuts {
+.managed-section {
   margin-top: 32px;
 }
 
-.shortcuts h2 {
+.managed-section h2 {
   margin: 0 0 4px;
   font-size: 1.05rem;
 }
@@ -182,7 +182,7 @@ body {
   font-size: 0.9rem;
 }
 
-.shortcut-list {
+.managed-list {
   margin: 0 0 16px;
   padding: 0;
   list-style: none;
@@ -191,7 +191,7 @@ body {
   background: var(--surface);
 }
 
-.shortcut-row {
+.managed-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -199,15 +199,15 @@ body {
   padding: 10px 12px;
 }
 
-.shortcut-row + .shortcut-row {
+.managed-row + .managed-row {
   border-top: 1px solid var(--border);
 }
 
-.shortcut-row .error {
+.managed-row .error {
   flex-basis: 100%;
 }
 
-.shortcut-url {
+.managed-detail {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -218,16 +218,16 @@ body {
 }
 
 .row-actions,
-.shortcut-rename {
+.managed-rename {
   display: flex;
   gap: 6px;
 }
 
-.shortcut-rename {
+.managed-rename {
   flex: 1;
 }
 
-.shortcut-rename input {
+.managed-rename input {
   flex: 1;
   min-width: 0;
 }
@@ -252,7 +252,7 @@ body {
   min-width: 200px;
 }
 
-.shortcuts input {
+.managed-section input {
   font: inherit;
   color: var(--text);
   background: var(--bg);
@@ -261,7 +261,7 @@ body {
   padding: 6px 8px;
 }
 
-.shortcuts button {
+.managed-section button {
   font: inherit;
   font-size: 0.9rem;
   color: var(--text);
@@ -272,17 +272,17 @@ body {
   cursor: pointer;
 }
 
-.shortcuts button:hover {
+.managed-section button:hover {
   border-color: var(--muted);
 }
 
-.shortcuts button[type="submit"] {
+.managed-section button[type="submit"] {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--surface);
 }
 
-.shortcuts h2:focus {
+.managed-section h2:focus {
   outline: none;
 }
 
@@ -439,11 +439,7 @@ body {
   font-size: 0.8rem;
 }
 
-/* Followed Companies (ticket 04): reuses the Shortcuts list styles. */
-.companies {
-  margin-top: 32px;
-}
-
+/* Followed Companies (ticket 04): a managed list, like the Shortcuts. */
 .company-name {
   font-weight: 600;
 }
