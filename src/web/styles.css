@@ -835,6 +835,7 @@ mark.hl-search.hl-boosted {
 .list-actions .hint {
   margin: 0;
   font-size: 0.85rem;
+}
 
 /* Keyboard triage (ticket 13): the selected Job carries an accent bar; focus adds the ring. */
 .job-row {
