@@ -74,7 +74,10 @@ export function FollowCompany({ onFollowed }: { onFollowed: () => void }) {
   return (
     <section aria-labelledby={`${ids}-heading`} className="follow-company form-section">
       <h2 id={`${ids}-heading`}>Follow a Company</h2>
-      <p className="hint">Paste the link of a Greenhouse, Recruitee, Workable or Personio job board or of one of its Jobs.</p>
+      <p className="hint">
+        Paste the link of a Greenhouse, Recruitee, Workable or Personio job board, of one of its Jobs, or of an RSS/Atom
+        job feed.
+      </p>
       <form className="inline-form" onSubmit={onFind} noValidate>
         <label className="grow">
           <span>Link</span>

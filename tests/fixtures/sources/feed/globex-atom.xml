@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title type="text">Globex jobs</title>
+  <id>urn:globex:jobs</id>
+  <updated>2026-01-14T12:00:00Z</updated>
+  <entry>
+    <title type="html">Platform Engineer</title>
+    <id>urn:globex:job:7001</id>
+    <link rel="enclosure" href="https://globex.example/jobs/7001.pdf"/>
+    <link rel="alternate" type="text/html" href="https://globex.example/jobs/7001"/>
+    <published>2026-01-13T09:15:00+01:00</published>
+    <updated>2026-01-14T09:15:00+01:00</updated>
+  </entry>
+  <entry>
+    <title>Recruiter</title>
+    <link href="https://globex.example/jobs/7002"/>
+    <updated>2026-01-11T16:00:00Z</updated>
+  </entry>
+</feed>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Acme Careers</title>
+    <item>
+      <title>Office Manager</title>
+      <link>https://careers.acme.example/jobs/office-manager/</link>
+      <guid>https://careers.acme.example/?p=99</guid>
+      <pubDate>Fri, 02 Jan 2026 10:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>
