@@ -36,6 +36,21 @@ export function changeStatus(db: Database, id: number, action: JobAction): Job |
   return getJob(db, id)!;
 }
 
+/** Mark all as seen: the given Jobs that are still Unseen become Seen, in one transaction; returns them. */
+export function markAllSeen(db: Database, ids: number[]): Job[] {
+  const update = db.prepare("UPDATE job SET status = 'seen', was_saved = 0 WHERE id = ? AND status = 'unseen'");
+  const changed: number[] = [];
+  db.exec("BEGIN");
+  try {
+    for (const id of new Set(ids)) if (update.run(id).changes > 0) changed.push(id);
+    db.exec("COMMIT");
+  } catch (err) {
+    db.exec("ROLLBACK");
+    throw err;
+  }
+  return changed.map((id) => getJob(db, id)!);
+}
+
 /** A status and flag a Job can be in: the flag only ever goes with Applied. */
 export function isValidState(status: unknown, wasSaved: unknown): status is JobStatus {
   return (

@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Clock } from "./clock.ts";
 import { resetDatabase, type Database } from "./db.ts";
 import { registerCompanyRoutes } from "./routes/companies.ts";
+import { registerFilterRoutes } from "./routes/filter.ts";
 import { registerJobRoutes } from "./routes/jobs.ts";
 import { registerShortcutRoutes } from "./routes/shortcuts.ts";
 
@@ -26,6 +27,7 @@ export function createApp(deps: AppDeps): Hono {
   registerJobRoutes(api, deps);
   registerCompanyRoutes(api, deps);
   registerShortcutRoutes(api, deps);
+  registerFilterRoutes(api, deps);
   if (deps.testReset) {
     api.post("/test/reset", (c) => {
       resetDatabase(deps.db);
