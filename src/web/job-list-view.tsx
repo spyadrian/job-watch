@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { emptyFilter, jobRows, type Filter, type Job, type JobRow, type ListKind } from "./job-list.ts";
+import { canApply } from "../shared/job-lifecycle.ts";
 import type { JobAction } from "../shared/types.ts";
 import { useGlobalKeys } from "./global-keys.ts";
 import { Highlighted } from "./highlighted.tsx";
@@ -134,13 +135,15 @@ function useSelection(
       if (e.target instanceof Element && e.target.closest(ownsEnter)) return false;
       window.open(current.job.url, "_blank", "noopener,noreferrer");
     },
-    // e / s / a: the same toggles as the row's Seen / Save / Applied buttons.
+    // e / s / a: the same toggles as the row's Seen / Save / Applied buttons, only when they are enabled.
     ...Object.fromEntries(
       statusToggles.map((t) => [
         t.key,
         () => {
           if (!current) return false;
-          onAct(current.job, toggleAction(current.job, t));
+          const action = toggleAction(current.job, t);
+          if (!canApply(current.job, action)) return false;
+          onAct(current.job, action);
         },
       ]),
     ),

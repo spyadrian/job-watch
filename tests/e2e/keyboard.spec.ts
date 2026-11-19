@@ -91,6 +91,30 @@ test("e, s and a triage the selected Job, the next Job takes its place, and u un
   await expectCounts(page, { Saved: 0, Seen: 1 });
 });
 
+test("e, s and a do nothing when the selected Job's button for them is disabled", async ({ page }) => {
+  await follow(page, "acme", "Acme");
+  const { jobs } = await (await page.request.get("/api/jobs")).json();
+  expect((await page.request.post(`/api/jobs/${jobs[0].id}/status`, { data: { action: "apply" } })).status()).toBe(200);
+  const statusAnswers: number[] = [];
+  page.on("response", (res) => {
+    if (res.url().includes("/status")) statusAnswers.push(res.status());
+  });
+  await page.goto("/");
+  await tab(page, "Applied").click();
+  await page.keyboard.press("j");
+  await expect(selected(page).getByRole("button", { name: "Seen" })).toBeDisabled();
+  await expect(selected(page).getByRole("button", { name: "Save" })).toBeDisabled();
+
+  await page.keyboard.press("e");
+  await page.keyboard.press("s");
+  // a is allowed (un-mark Applied): once it is done, e and s have had every chance to call the API.
+  await page.keyboard.press("a");
+  await expect(page.getByRole("status")).toContainText("Unmarked as applied");
+
+  expect(statusAnswers).toEqual([200]);
+  await expectCounts(page, { Applied: 0, Seen: 1 });
+});
+
 test("Show 50 more pages the list, j past the last shown Job too, and Mark all as seen takes the shown Jobs", async ({
   page,
 }) => {
