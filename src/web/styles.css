@@ -562,3 +562,81 @@ body {
 .toast-undo {
   color: var(--accent);
 }
+
+/* Search (ticket 12) */
+.search {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.search input {
+  width: 100%;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 36px 7px 12px;
+}
+
+.search-key {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 1.4em;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font: 0.8rem/1.4 var(--font);
+  text-align: center;
+  pointer-events: none;
+}
+
+.search input:focus + .search-key,
+.search input:not(:placeholder-shown) + .search-key {
+  display: none;
+}
+
+/* Highlights: keyword kinds fill the background, search underlines, so they combine. */
+mark {
+  color: inherit;
+  background: none;
+  border-radius: 2px;
+}
+
+mark.hl-required {
+  background: var(--hl-required);
+}
+
+mark.hl-boosted {
+  background: var(--hl-boosted);
+}
+
+mark.hl-search {
+  background-color: var(--hl-search);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+mark.hl-search.hl-required {
+  background: var(--hl-required);
+}
+
+mark.hl-search.hl-boosted {
+  background: var(--hl-boosted);
+}
+
+:root {
+  --hl-required: #cdeccf;
+  --hl-boosted: #fbeaa0;
+  --hl-search: #dbe5fb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --hl-required: #1f4a27;
+    --hl-boosted: #5a4a0c;
+    --hl-search: #22345e;
+  }
+}
