@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { emptyFilter, jobRows, type Job, type JobRow, type ListKind } from "./job-list.ts";
 import type { JobAction } from "../shared/types.ts";
+import { Highlighted } from "./highlighted.tsx";
 import { StatusButtons } from "./job-status.tsx";
 import { timeAgo } from "./time-ago.ts";
 
@@ -10,19 +11,24 @@ export const PAGE_SIZE = 50;
 export function JobListView({
   jobs,
   list,
+  query,
   empty,
   onAct,
 }: {
   jobs: Job[];
   list: ListKind;
+  query: string;
   empty: string;
   onAct: (job: Job, action: JobAction) => void;
 }) {
   const [shown, setShown] = useState(PAGE_SIZE);
   const now = useNow();
-  const rows = jobRows(jobs, list, emptyFilter, "");
+  const rows = jobRows(jobs, list, emptyFilter, query);
 
-  if (rows.length === 0) return <p className="empty">{empty}</p>;
+  if (rows.length === 0) {
+    const searching = query.trim() !== "" && jobRows(jobs, list, emptyFilter, "").length > 0;
+    return <p className="empty">{searching ? `No Jobs match “${query.trim()}”.` : empty}</p>;
+  }
   const visible = rows.slice(0, shown);
   return (
     <>
@@ -46,7 +52,7 @@ export function JobListView({
 }
 
 function JobRowItem({
-  row: { job },
+  row: { job, highlights },
   now,
   onAct,
 }: {
@@ -57,16 +63,18 @@ function JobRowItem({
   return (
     <li className="job-row">
       <a className="job-title" href={job.url} target="_blank" rel="noopener noreferrer">
-        {job.title}
+        <Highlighted text={job.title} highlights={highlights.title} />
         <span className="visually-hidden"> (opens in a new tab)</span>
       </a>
       <div className="job-meta">
-        <span className="job-company">{job.companyName}</span>
+        <span className="job-company">
+          <Highlighted text={job.companyName} highlights={highlights.company} />
+        </span>
         {job.locations.length > 0 && (
           <span className="job-locations">
             {job.locations.map((location, i) => (
               <span key={i} className="job-location">
-                {location}
+                <Highlighted text={location} highlights={highlights.locations[i] ?? []} />
               </span>
             ))}
           </span>
