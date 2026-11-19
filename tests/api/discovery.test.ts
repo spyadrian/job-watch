@@ -175,6 +175,29 @@ describe("discovering a Company from its name", () => {
     );
   });
 
+  it("tries a name that contains a dot both as a site and as a name", async () => {
+    const { request, requested } = createTestApp({
+      sources: { [boardUrls("bookingcom")[0]!]: json("greenhouse/acme.json") },
+    });
+
+    const res = await request("POST", "/api/companies/discover", { input: "Booking.com" });
+
+    expect(res.status).toBe(200);
+    expect((await res.json()).candidates).toEqual([
+      expect.objectContaining({ source: { type: "greenhouse", key: "bookingcom" }, jobCount: 3 }),
+    ]);
+    expect(requested).toContain("https://booking.com/");
+  });
+
+  it("doesn't open a dotted name that can't be a site", async () => {
+    const { request, requested } = createTestApp();
+
+    await request("POST", "/api/companies/discover", { input: "Acme.x1" });
+
+    expect(requested.filter((url) => url.includes("acme.x1"))).toEqual([]);
+    for (const url of boardUrls("acmex1")) expect(requested).toContain(url);
+  });
+
   it("doesn't mistake a link it can't open for a name", async () => {
     const { request } = createTestApp();
 

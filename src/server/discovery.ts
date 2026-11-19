@@ -31,7 +31,33 @@ export async function discover(input: string, deps: DiscoveryDeps): Promise<Disc
     }
     return { candidates: await discoverByName(input, deps) };
   }
-  return discoverByLink(url, deps);
+  if (!mayBeName(input, url)) return discoverByLink(url, deps);
+
+  // "Booking.com", "monday.com": a bare host may be the site or the Company's name. Try both.
+  const [byLink, byName] = await Promise.all([
+    discoverByLink(url, deps).catch((err: unknown) => {
+      if (err instanceof DiscoveryError) return err;
+      throw err;
+    }),
+    discoverByName(input, deps),
+  ]);
+  const fromLink = byLink instanceof DiscoveryError ? [] : byLink.candidates;
+  const seen = new Set(fromLink.map((c) => `${c.source.type}:${c.source.key}`));
+  const candidates = [...fromLink, ...byName.filter((c) => !seen.has(`${c.source.type}:${c.source.key}`))];
+  if (byLink instanceof DiscoveryError) {
+    if (candidates.length === 0) throw byLink;
+    return { candidates };
+  }
+  return byLink.unreachable === undefined ? { candidates } : { candidates, unreachable: byLink.unreachable };
+}
+
+/** Input typed without a scheme that is only a host ("Booking.com") could also be a Company name. */
+function mayBeName(input: string, url: URL): boolean {
+  return !hasScheme(input.trim()) && url.pathname === "/" && !url.search && !url.hash && !input.trim().endsWith("/");
+}
+
+function hasScheme(text: string): boolean {
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(text);
 }
 
 /**
@@ -187,11 +213,13 @@ async function candidateFor(source: SourceRef, deps: DiscoveryDeps): Promise<Can
 function parseLink(input: string): URL | null {
   const text = input.trim();
   if (!text || /\s/.test(text)) return null;
-  // Accept links pasted without a scheme ("job-boards.greenhouse.io/acme").
-  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `https://${text}`;
+  // Accept links pasted without a scheme ("job-boards.greenhouse.io/acme"), if the host
+  // is plausible: otherwise "Acme.x1" is a name, not a site to fetch.
+  const schemeless = !hasScheme(text);
   try {
-    const url = new URL(withScheme);
+    const url = new URL(schemeless ? `https://${text}` : text);
     if ((url.protocol !== "https:" && url.protocol !== "http:") || !url.hostname.includes(".")) return null;
+    if (schemeless && !/^(?:[a-z0-9-]+\.)+(?:[a-z]{2,}|xn--[a-z0-9-]+)$/.test(url.hostname)) return null;
     return url;
   } catch {
     return null;
