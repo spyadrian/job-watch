@@ -1,0 +1,20 @@
+[
+  {
+    "categories": {
+      "commitment": "Full-time",
+      "department": "Risk",
+      "location": "Lausanne",
+      "team": "Credit Risk",
+      "allLocations": ["Lausanne"]
+    },
+    "createdAt": 1767225600000,
+    "descriptionPlain": "Trimmed.",
+    "id": "e7d6c5b4-a392-4817-b6f5-e4d3c2b1a001",
+    "lists": [],
+    "text": "Credit Risk Analyst",
+    "country": "CH",
+    "workplaceType": "onsite",
+    "hostedUrl": "https://jobs.eu.lever.co/alpenbank/e7d6c5b4-a392-4817-b6f5-e4d3c2b1a001",
+    "applyUrl": "https://jobs.eu.lever.co/alpenbank/e7d6c5b4-a392-4817-b6f5-e4d3c2b1a001/apply"
+  }
+]

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<workzag-jobs>
+
+<position>
+    <id>2885178</id>
+    <subcompany>Acme Robotics AG</subcompany>
+    <office>Zürich</office>
+    <additionalOffices>
+        <office>Bern</office>
+        <office>Remote</office>
+    </additionalOffices>
+    <department>Engineering</department>
+    <recruitingCategory>Engineering</recruitingCategory>
+    <name>Senior Backend Engineer (m/f/d)</name>
+    <jobDescriptions>
+        <jobDescription>
+            <name>Your role</name>
+            <value><![CDATA[<p>Build robots &amp; their software.</p>]]></value>
+        </jobDescription>
+    </jobDescriptions>
+    <employmentType>permanent</employmentType>
+    <seniority>experienced</seniority>
+    <schedule>full-time</schedule>
+    <yearsOfExperience>3-5</yearsOfExperience>
+    <occupation>software_and_web_development</occupation>
+    <occupationCategory>it_software</occupationCategory>
+    <createdAt>2026-01-08T14:00:00+00:00</createdAt>
+</position>
+
+<position>
+    <id>2884392</id>
+    <subcompany>Acme Robotics AG</subcompany>
+    <office>Lausanne</office>
+    <department>Sales &amp; Marketing</department>
+    <name>Sales &amp; Partnerships Lead</name>
+    <jobDescriptions></jobDescriptions>
+    <employmentType>permanent</employmentType>
+    <seniority>entry-level</seniority>
+    <schedule>full-time</schedule>
+    <occupation>business_development_and_new_accounts</occupation>
+    <occupationCategory>sales_and_business_development</occupationCategory>
+    <createdAt>2026-01-10T18:30:00+01:00</createdAt>
+</position>
+
+<position>
+    <id>2880001</id>
+    <name>Working Student</name>
+    <jobDescriptions></jobDescriptions>
+    <employmentType>intern</employmentType>
+    <schedule>part-time</schedule>
+</position>
+
+</workzag-jobs>
