@@ -92,3 +92,83 @@ describe("discovering a Company from a careers page that advertises a feed", () 
     });
   });
 });
+
+/** Every board URL a name's slug is tried at, one per supported ATS. */
+const boardUrls = (slug: string) => [
+  `https://boards-api.greenhouse.io/v1/boards/${slug}/jobs`,
+  `https://api.lever.co/v0/postings/${slug}?mode=json`,
+  `https://api.eu.lever.co/v0/postings/${slug}?mode=json`,
+  `https://api.ashbyhq.com/posting-api/job-board/${slug}`,
+  `https://api.smartrecruiters.com/v1/companies/${slug}/postings?limit=100&offset=0`,
+  `https://${slug}.recruitee.com/api/offers/`,
+  `https://apply.workable.com/api/v1/widget/accounts/${slug}`,
+  `https://${slug}.jobs.personio.de/xml`,
+];
+
+describe("discovering a Company from its name", () => {
+  /** SmartRecruiters answers an unknown company with a valid, empty board. */
+  const unknownOnSmartRecruiters = {
+    "https://api.smartrecruiters.com/v1/companies/acme/postings?limit=100&offset=0": {
+      body: { offset: 0, limit: 100, totalFound: 0, content: [] },
+    },
+  };
+
+  it("lists every ATS that has a board for the name, with type, suggested name and job count", async () => {
+    const { request, requested } = createTestApp({ sources: { ...boards, ...unknownOnSmartRecruiters } });
+
+    const res = await request("POST", "/api/companies/discover", { input: "Acme" });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      candidates: [
+        { source: { type: "greenhouse", key: "acme" }, sourceLabel: "Greenhouse", suggestedName: "Acme Robotics", jobCount: 3, alreadyFollowing: null },
+        { source: { type: "recruitee", key: "acme" }, sourceLabel: "Recruitee", suggestedName: "Acme Robotics", jobCount: 3, alreadyFollowing: null },
+        { source: { type: "workable", key: "acme" }, sourceLabel: "Workable", suggestedName: "Acme Robotics", jobCount: 3, alreadyFollowing: null },
+        { source: { type: "personio", key: "acme" }, sourceLabel: "Personio", suggestedName: "Acme Robotics AG", jobCount: 3, alreadyFollowing: null },
+      ],
+    });
+    for (const url of boardUrls("acme")) expect(requested).toContain(url);
+    expect(await (await request("GET", "/api/jobs")).json()).toEqual({ jobs: [] });
+  });
+
+  it("tries the name as one word and hyphenated, lowercased and without accents", async () => {
+    const { request, requested } = createTestApp();
+
+    await request("POST", "/api/companies/discover", { input: "  Café Zürich  " });
+
+    for (const url of [...boardUrls("cafezurich"), ...boardUrls("cafe-zurich")]) expect(requested).toContain(url);
+  });
+
+  it("finds no candidate when no ATS knows the name", async () => {
+    const { request } = createTestApp({ sources: unknownOnSmartRecruiters });
+
+    const res = await request("POST", "/api/companies/discover", { input: "Acme" });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ candidates: [] });
+  });
+
+  it("flags a candidate that is already followed", async () => {
+    const { request } = createTestApp({ sources: boards });
+    await request("POST", "/api/companies", { source: { type: "workable", key: "acme" }, name: "Acme (Workable)" });
+
+    const res = await request("POST", "/api/companies/discover", { input: "acme" });
+
+    const { candidates } = await res.json();
+    expect(candidates.find((c: { source: { type: string } }) => c.source.type === "workable").alreadyFollowing).toBe(
+      "Acme (Workable)",
+    );
+    expect(candidates.find((c: { source: { type: string } }) => c.source.type === "greenhouse").alreadyFollowing).toBe(
+      null,
+    );
+  });
+
+  it("doesn't mistake a link it can't open for a name", async () => {
+    const { request } = createTestApp();
+
+    const res = await request("POST", "/api/companies/discover", { input: "ftp://files.acme.example/jobs" });
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/doesn't look like a link/);
+  });
+});

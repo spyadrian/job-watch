@@ -23,10 +23,13 @@ export interface DiscoveryDeps extends SourceContext {
 export async function discover(input: string, deps: DiscoveryDeps): Promise<Candidate[]> {
   const url = parseLink(input);
   if (!url) {
-    throw new DiscoveryError(
-      "That doesn't look like a link. Paste the link of a job board or of one of its Jobs.",
-      400,
-    );
+    if (input.includes("://")) {
+      throw new DiscoveryError(
+        "That doesn't look like a link. Paste the link of a job board or of one of its Jobs.",
+        400,
+      );
+    }
+    return discoverByName(input, deps);
   }
 
   const refs = sourcesFromLink(url);
@@ -48,6 +51,37 @@ export async function discover(input: string, deps: DiscoveryDeps): Promise<Cand
     throw err;
   }
   return candidates;
+}
+
+/**
+ * Tries a Company name's candidate slugs on every ATS in parallel. A board that
+ * can't be read simply isn't a candidate; neither is an empty board on an ATS that
+ * answers unknown keys with an empty board, since that proves nothing.
+ */
+async function discoverByName(name: string, deps: DiscoveryDeps): Promise<Candidate[]> {
+  const slugs = slugsForName(name);
+  const tries = adapters
+    .filter((adapter) => adapter.type !== "feed")
+    .flatMap((adapter) => slugs.map((slug) => ({ adapter, ref: { type: adapter.type, key: slug } })));
+  const results = await Promise.allSettled(
+    tries.map(async ({ adapter, ref }) => {
+      const candidate = await candidateFor(ref, deps);
+      return candidate.jobCount === 0 && adapter.unknownKeyReadsEmpty ? null : candidate;
+    }),
+  );
+  return results.flatMap((r) => (r.status === "fulfilled" && r.value ? [r.value] : []));
+}
+
+/** "Café Zürich" → ["cafezurich", "cafe-zurich"]: lowercase, no accents, one word or hyphenated. */
+export function slugsForName(name: string): string[] {
+  const words = name
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+  if (words.length === 0) return [];
+  return [...new Set([words.join(""), words.join("-")])];
 }
 
 /** Matches a link against every adapter's known link patterns. */
