@@ -40,3 +40,8 @@ export function findRanges(text: string, needle: string): Array<[number, number]
   }
   return ranges;
 }
+
+/** Orders ranges (e.g. highlights) by where they start, then where they end. */
+export function byPosition(a: { start: number; end: number }, b: { start: number; end: number }): number {
+  return a.start - b.start || a.end - b.end;
+}

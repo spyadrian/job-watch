@@ -1,7 +1,7 @@
 // The Filter rules of the job-list module: City filters and keywords.
 import type { Filter, Job } from "../shared/types.ts";
 import type { Highlight } from "./job-list.ts";
-import { findRanges, fold } from "./text-match.ts";
+import { byPosition, findRanges, fold } from "./text-match.ts";
 
 /** Whether the Job may reach the Inbox. */
 export function passesFilter(job: Job, filter: Filter): boolean {
@@ -24,9 +24,7 @@ export function keywordHighlights(title: string, filter: Filter): Highlight[] {
     keywords
       .filter((k) => k.trim() !== "")
       .flatMap((k) => findRanges(title, k.trim()).map(([start, end]) => ({ start, end, kind })));
-  return [...ranges(filter.required, "required"), ...ranges(filter.boosted, "boosted")].sort(
-    (a, b) => a.start - b.start || a.end - b.end,
-  );
+  return [...ranges(filter.required, "required"), ...ranges(filter.boosted, "boosted")].sort(byPosition);
 }
 
 /** The keywords, folded, without blank ones. */

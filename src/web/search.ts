@@ -1,7 +1,7 @@
 // Full-text search: every word of the query must match the title, Company or a location.
 import type { Job } from "../shared/types.ts";
 import type { Highlight, RowHighlights } from "./job-list.ts";
-import { findRanges } from "./text-match.ts";
+import { byPosition, findRanges } from "./text-match.ts";
 
 /** The words of a search query (empty query → no words → every Job matches). */
 export function searchWords(query: string): string[] {
@@ -27,5 +27,5 @@ function fieldHighlights(text: string, words: readonly string[]): Highlight[] {
   return words
     .flatMap((word) => findRanges(text, word))
     .map(([start, end]): Highlight => ({ start, end, kind: "search" }))
-    .sort((a, b) => a.start - b.start || a.end - b.end);
+    .sort(byPosition);
 }

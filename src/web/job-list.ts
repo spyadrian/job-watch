@@ -3,6 +3,7 @@
 import type { Filter, Job, JobStatus } from "../shared/types.ts";
 import { isBoosted, keywordHighlights, passesFilter } from "./filter.ts";
 import { matchesSearch, searchHighlights, searchWords } from "./search.ts";
+import { byPosition } from "./text-match.ts";
 
 export type { Filter, Job, JobStatus };
 
@@ -48,9 +49,7 @@ export function jobRows(jobs: readonly Job[], list: ListKind, filter: Filter, qu
     .sort((a, b) => Number(b.boosted) - Number(a.boosted) || compareJobs(a.job, b.job))
     .map(({ job }) => {
       const highlights = searchHighlights(job, words);
-      highlights.title = [...keywordHighlights(job.title, filter), ...highlights.title].sort(
-        (a, b) => a.start - b.start || a.end - b.end,
-      );
+      highlights.title = [...keywordHighlights(job.title, filter), ...highlights.title].sort(byPosition);
       return { job, highlights };
     });
 }
