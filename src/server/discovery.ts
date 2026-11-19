@@ -2,6 +2,8 @@
 // each read once through its adapter for an actual job count. Saves nothing.
 import type { Candidate, SourceRef } from "../shared/types.ts";
 import type { Database } from "./db.ts";
+import { feedSourceFromPage } from "./sources/feed.ts";
+import { getText } from "./sources/http.ts";
 import { adapters, adapterFor, SourceError, type SourceContext } from "./sources/index.ts";
 
 /** The input can't be used; `status` is the HTTP status to answer with. */
@@ -28,6 +30,14 @@ export async function discover(input: string, deps: DiscoveryDeps): Promise<Cand
   }
 
   const refs = sourcesFromLink(url);
+  if (refs.length === 0) {
+    // No known link pattern: fetch the link once; an RSS/Atom answer is itself the Source.
+    const page = await fetchPage(url, deps);
+    if (page !== null) {
+      const feedRef = feedSourceFromPage(url, page);
+      if (feedRef) refs.push(feedRef);
+    }
+  }
   const results = await Promise.allSettled(refs.map((ref) => candidateFor(ref, deps)));
   const candidates = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
   const firstFailure = results.find((r) => r.status === "rejected");
@@ -47,6 +57,16 @@ export function sourcesFromLink(url: URL): SourceRef[] {
     if (key !== null) refs.push({ type: adapter.type, key });
   }
   return refs;
+}
+
+/** The body behind a link, or null when it can't be fetched (then it simply yields no Source). */
+async function fetchPage(url: URL, deps: DiscoveryDeps): Promise<string | null> {
+  try {
+    return await getText(deps, url.href, `the page ${url.href}`);
+  } catch (err) {
+    if (err instanceof SourceError) return null;
+    throw err;
+  }
 }
 
 async function candidateFor(source: SourceRef, deps: DiscoveryDeps): Promise<Candidate> {

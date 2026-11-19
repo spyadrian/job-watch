@@ -36,7 +36,12 @@ export function createTestApp(options: TestAppOptions = {}) {
   const clock = new TestClock(options.now);
   const db = openDatabase(":memory:");
   // Rebuilt per call so tests can change `sources` between requests (e.g. a Job disappearing).
-  const fetch: typeof globalThis.fetch = (input, init) => createRecordedFetch(sources)(input, init);
+  const fetch: typeof globalThis.fetch = (input, init) => {
+    requested.push(input instanceof Request ? input.url : String(input));
+    return createRecordedFetch(sources)(input, init);
+  };
+  /** Every URL the server fetched, in order, exactly as requested. */
+  const requested: string[] = [];
   const app = createApp({ db, fetch, clock });
 
   async function request(method: string, path: string, body?: unknown): Promise<Response> {
@@ -48,5 +53,5 @@ export function createTestApp(options: TestAppOptions = {}) {
     return app.request(path, init);
   }
 
-  return { app, db, clock, sources, request };
+  return { app, db, clock, sources, requested, request };
 }

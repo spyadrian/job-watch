@@ -1,6 +1,7 @@
 // Registry of Source adapters. To support another ATS: write src/server/sources/<type>.ts
 // implementing SourceAdapter (including matchLink for its link patterns), add its type
 // to SourceType in src/shared/types.ts, and list it here. Nothing else changes.
+import { feed } from "./feed.ts";
 import { greenhouse } from "./greenhouse.ts";
 import { ashby } from "./ashby.ts";
 import { lever, leverEu } from "./lever.ts";
@@ -13,6 +14,7 @@ export const adapters: readonly SourceAdapter[] = [
   leverEu,
   ashby,
   smartrecruiters,
+  feed,
 ];
 
 export function adapterFor(type: string): SourceAdapter | undefined {
