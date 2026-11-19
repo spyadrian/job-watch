@@ -55,6 +55,19 @@ export interface Company {
   source: SourceRef;
   sourceLabel: string;
   createdAt: string;
+  /** Why the Source failed on the last read, or null when it was read fine. */
+  lastError: CompanyError | null;
+}
+
+/** A failed read of a Company's Source: the reason, and when (ISO 8601). */
+export interface CompanyError {
+  message: string;
+  at: string;
+}
+
+/** GET /api/companies → followed Companies, by name. */
+export interface CompaniesResponse {
+  companies: Company[];
 }
 
 /** POST /api/companies { source, name } → 201 */
