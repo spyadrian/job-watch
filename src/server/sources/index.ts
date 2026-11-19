@@ -2,9 +2,13 @@
 // implementing SourceAdapter (including matchLink for its link patterns), add its type
 // to SourceType in src/shared/types.ts, and list it here. Nothing else changes.
 import { greenhouse } from "./greenhouse.ts";
+import { recruitee } from "./recruitee.ts";
 import type { SourceAdapter, SourceType } from "./types.ts";
 
-export const adapters: readonly SourceAdapter[] = [greenhouse];
+export const adapters: readonly SourceAdapter[] = [
+  greenhouse,
+  recruitee,
+];
 
 export function adapterFor(type: string): SourceAdapter | undefined {
   return adapters.find((adapter) => adapter.type === (type as SourceType));
