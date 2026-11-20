@@ -44,7 +44,6 @@ export const oracleHcm: SourceAdapter = {
   label: "Oracle Cloud HCM",
   // Name discovery skips this adapter: an instance's host (e.g. iaadtu.fa.ocs.oraclecloud.eu)
   // can't be derived from a Company's name.
-  discoverableByName: false,
 
   matchLink(url) {
     const host = url.hostname.toLowerCase();

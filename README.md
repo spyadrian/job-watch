@@ -6,7 +6,7 @@ An account-free job watcher: follow the Companies you care about and review thei
 
 ## What it does
 
-- **Follow Companies.** Paste a job board, careers page or feed link, or type a Company name; Job Watch finds the Company's Source and reads its open Jobs. Supported Sources: Greenhouse, Lever (US and EU), Ashby, SmartRecruiters, Recruitee, Workable, Personio, Oracle Cloud HCM (Oracle Recruiting Cloud careers sites), and any RSS/Atom feed.
+- **Follow Companies.** Paste a job board, careers page or feed link, or type a Company name; Job Watch finds the Company's Source and reads its open Jobs. Supported Sources: Greenhouse, Lever (US and EU), Ashby, SmartRecruiters, Recruitee, Workable, Personio, iCIMS careers sites built on Jibe, Workday careers sites, Oracle Cloud HCM (Oracle Recruiting Cloud careers sites), and any RSS/Atom feed.
 - **Shortcuts** for careers sites whose Jobs can't be read automatically: one click opens them in a new tab.
 - **One Inbox** of the Unseen Jobs that pass your **Filter**: City filters (with several spellings, e.g. Geneva / Genève / Genf), whether to include remote Jobs, and Required (green), Boosted (yellow) and Excluded (red) keywords.
 - **Statuses.** Every Job is Unseen, Seen, Saved or Applied, each with its own list. A Job that disappears from its Source after a Refresh is marked Outdated.
@@ -18,7 +18,7 @@ An account-free job watcher: follow the Companies you care about and review thei
 ## Why
 
 - **No account, no hosted service.** Job Watch runs locally, bound to `127.0.0.1`. Your Companies, Filter and statuses stay in one SQLite file on your machine.
-- **Official Sources only, no HTML scraping.** The server reads Jobs from public ATS job board APIs and RSS/Atom feeds and never scrapes them out of HTML pages, which would be fragile and break many sites' terms of service. A local server is still needed because most feeds can't be read from a browser (no CORS). See [ADR 0001](docs/adr/0001-local-only-app-no-html-scraping.md).
+- **Official Sources only, no HTML scraping.** The server reads Jobs from public ATS job board APIs, the public JSON APIs careers sites call themselves, and RSS/Atom feeds, and never scrapes them out of HTML pages, which would be fragile and break many sites' terms of service. A local server is still needed because most feeds can't be read from a browser (no CORS). See [ADR 0001](docs/adr/0001-local-only-app-no-html-scraping.md) and [ADR 0002](docs/adr/0002-careers-site-json-apis-count-as-sources.md).
 
 ## Getting started
 

@@ -40,15 +40,19 @@ export interface SourceAdapter {
    */
   matchLink(url: URL): string | null;
   /**
+   * For careers sites on the employer's own domain, which matchLink can't recognise:
+   * looks at a page discovery fetched (its URL and HTML) and returns the Source key
+   * when the page is one of this Source type's sites, else null. Only recognises the
+   * site; Jobs are still read from the API, and that read is what confirms it.
+   */
+  matchPage?(pageUrl: URL, html: string): string | null;
+  /**
    * True when the ATS answers a key it doesn't know with a valid, empty board
    * (instead of an error), so an empty read doesn't prove the Company is there.
    */
   unknownKeyReadsEmpty?: boolean;
-  /**
-   * False when a Company's name can't be turned into a key without guessing a host
-   * (e.g. a per-customer instance); name discovery then skips this adapter.
-   */
-  discoverableByName?: boolean;
+  /** A Company name to suggest from the key, when the Source doesn't state one and the key isn't a plain slug. */
+  nameFromKey?(key: string): string;
   /** Reads every Job of the Source. Throws SourceError on any failure; never returns a partial list. */
   read(key: string, ctx: SourceContext): Promise<SourceRead>;
 }

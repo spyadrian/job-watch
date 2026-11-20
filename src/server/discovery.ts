@@ -101,6 +101,13 @@ async function readCandidates(refs: SourceRef[], deps: DiscoveryDeps): Promise<D
 }
 
 /**
+ * Source types whose key a name can't give without guessing a host: a feed's URL, the
+ * host of a Jibe careers site (on the employer's own domain), a Workday site (tenant,
+ * data centre and site name), and an Oracle Cloud HCM instance host and site number.
+ */
+const NOT_BY_NAME: ReadonlySet<string> = new Set(["feed", "jibe", "workday", "oracle-hcm"]);
+
+/**
  * Tries a Company name's candidate slugs on every ATS in parallel. A board that
  * can't be read simply isn't a candidate; neither is an empty board on an ATS that
  * answers unknown keys with an empty board, since that proves nothing.
@@ -108,8 +115,7 @@ async function readCandidates(refs: SourceRef[], deps: DiscoveryDeps): Promise<D
 async function discoverByName(name: string, deps: DiscoveryDeps): Promise<Candidate[]> {
   const slugs = slugsForName(name);
   const tries = adapters
-    // A feed has no name-derived URL; adapters needing a per-Company host opt out.
-    .filter((adapter) => adapter.type !== "feed" && adapter.discoverableByName !== false)
+    .filter((adapter) => !NOT_BY_NAME.has(adapter.type))
     .flatMap((adapter) => slugs.map((slug) => ({ adapter, ref: { type: adapter.type, key: slug } })));
   const results = await Promise.allSettled(
     tries.map(async ({ adapter, ref }) => {
@@ -150,7 +156,8 @@ const MAX_PAGE_SOURCES = 10;
 
 /**
  * The Sources an HTML page points to: embedded ATS boards (any link, iframe or
- * script URL matching an adapter's link patterns). Jobs are never read from the HTML itself.
+ * script URL matching an adapter's link patterns), or the page's own site when an
+ * adapter recognises it (matchPage). Jobs are never read from the HTML itself.
  */
 export function sourcesInPage(pageUrl: URL, html: string): SourceRef[] {
   // URLs may sit in attributes (&amp;-escaped) or in inline JSON (\/-escaped).
@@ -164,6 +171,11 @@ export function sourcesInPage(pageUrl: URL, html: string): SourceRef[] {
       continue;
     }
     for (const ref of sourcesFromLink(url)) found.set(`${ref.type}:${ref.key}`, ref);
+  }
+  // A careers site on the employer's own domain, recognised from the page itself.
+  for (const adapter of adapters) {
+    const key = adapter.matchPage?.(pageUrl, html) ?? null;
+    if (key !== null) found.set(`${adapter.type}:${key}`, { type: adapter.type, key });
   }
   for (const href of alternateFeedLinks(html)) {
     try {
@@ -220,10 +232,18 @@ async function candidateFor(source: SourceRef, deps: DiscoveryDeps): Promise<Can
   return {
     source,
     sourceLabel: adapter.label,
-    suggestedName: read.companyName?.trim() || (source.type === "feed" ? nameFromHost(source.key) : nameFromKey(source.key)),
+    suggestedName: read.companyName?.trim() || fallbackName(source),
     jobCount: read.jobs.length,
     alreadyFollowing: followed?.name ?? null,
   };
+}
+
+/** A name for a Source that doesn't state one: from the site for a feed URL or a host key, else the slug. */
+function fallbackName(source: SourceRef): string {
+  if (source.type === "feed") return nameFromHost(source.key);
+  if (source.type === "jibe") return nameFromHost(`https://${source.key}`);
+  const adapter = adapterFor(source.type);
+  return nameFromKey(adapter?.nameFromKey ? adapter.nameFromKey(source.key) : source.key);
 }
 
 /** A host name a person could type: labels, then a real-looking top-level domain. */
