@@ -108,7 +108,7 @@ async function readCandidates(refs: SourceRef[], deps: DiscoveryDeps): Promise<D
 async function discoverByName(name: string, deps: DiscoveryDeps): Promise<Candidate[]> {
   const slugs = slugsForName(name);
   const tries = adapters
-    .filter((adapter) => adapter.type !== "feed")
+    .filter((adapter) => adapter.type !== "feed" && adapter.triedByName !== false)
     .flatMap((adapter) => slugs.map((slug) => ({ adapter, ref: { type: adapter.type, key: slug } })));
   const results = await Promise.allSettled(
     tries.map(async ({ adapter, ref }) => {
@@ -219,7 +219,11 @@ async function candidateFor(source: SourceRef, deps: DiscoveryDeps): Promise<Can
   return {
     source,
     sourceLabel: adapter.label,
-    suggestedName: read.companyName?.trim() || (source.type === "feed" ? nameFromHost(source.key) : nameFromKey(source.key)),
+    suggestedName:
+      read.companyName?.trim() ||
+      (source.type === "feed"
+        ? nameFromHost(source.key)
+        : nameFromKey(adapter.nameFromKey ? adapter.nameFromKey(source.key) : source.key)),
     jobCount: read.jobs.length,
     alreadyFollowing: followed?.name ?? null,
   };

@@ -25,7 +25,7 @@ export interface Job {
 }
 
 /** Every supported Source type; one Source adapter each (src/server/sources/). */
-export type SourceType = "greenhouse" | "lever" | "lever-eu" | "ashby" | "smartrecruiters" | "recruitee" | "workable" | "personio" | "feed";
+export type SourceType = "greenhouse" | "lever" | "lever-eu" | "ashby" | "smartrecruiters" | "recruitee" | "workable" | "personio" | "workday" | "feed";
 
 /** Which Source a Company follows: its type plus slug (ATS) or feed URL (RSS/Atom). */
 export interface SourceRef {
