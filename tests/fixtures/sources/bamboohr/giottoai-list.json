@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "totalCount": 3
+  },
+  "result": [
+    {
+      "id": "32",
+      "jobOpeningName": "Spontaneous Application – Engineering Talent (Future Opportunities) ",
+      "departmentId": "18594",
+      "departmentLabel": "Product",
+      "employmentStatusLabel": "Full-Time",
+      "employmentType": null,
+      "location": {
+        "city": null,
+        "state": null
+      },
+      "atsLocation": {
+        "country": "Switzerland",
+        "state": null,
+        "province": "Vaud",
+        "city": "Lausanne"
+      },
+      "isRemote": null,
+      "locationType": "1"
+    },
+    {
+      "id": "36",
+      "jobOpeningName": "LLM Research Scientist",
+      "departmentId": "18596",
+      "departmentLabel": "AI",
+      "employmentStatusLabel": "Full-Time",
+      "employmentType": null,
+      "location": {
+        "city": "Lausanne",
+        "state": "Vaud"
+      },
+      "atsLocation": {
+        "country": null,
+        "state": null,
+        "province": null,
+        "city": null
+      },
+      "isRemote": null,
+      "locationType": "2"
+    },
+    {
+      "id": "39",
+      "jobOpeningName": "Machine Learning Engineer ",
+      "departmentId": "18600",
+      "departmentLabel": "Engineering",
+      "employmentStatusLabel": "Contractor",
+      "employmentType": null,
+      "location": {
+        "city": null,
+        "state": null
+      },
+      "atsLocation": {
+        "country": "Switzerland",
+        "state": null,
+        "province": "Vaud",
+        "city": "Lausanne"
+      },
+      "isRemote": null,
+      "locationType": "1"
+    }
+  ]
+}
