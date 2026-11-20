@@ -143,7 +143,9 @@ test("Show 50 more pages the list, j past the last shown Job too, and Mark all a
   await page.reload();
   await expect(rows(page)).toHaveCount(50);
   await expect(page.locator(".list-actions")).toContainText("55 Jobs");
-  await page.getByRole("button", { name: "Mark 50 as seen" }).click();
+  const markShown = page.locator(".list-actions").getByRole("button");
+  await expect(markShown).toHaveText("Mark 50 as seen");
+  await markShown.click();
   await expectCounts(page, { Inbox: 5, Seen: 50 });
   await expect(rows(page)).toHaveCount(5);
   await expect(page.locator(".list-actions")).toContainText("5 Jobs");

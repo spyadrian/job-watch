@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { Job } from "../shared/types.ts";
 import { call } from "./api.ts";
-import { CompaniesSection, useCompanies } from "./companies.tsx";
+import { CompaniesSection, useCompanies, type CompaniesState } from "./companies.tsx";
 import { FollowCompany } from "./follow-company.tsx";
 import { useGlobalKeys } from "./global-keys.ts";
 import { FilterPanel, useFilter } from "./filter-panel.tsx";
-import { jobRows } from "./job-list.ts";
+import { jobRows, type LoadState } from "./job-list.ts";
 import { JobListView } from "./job-list-view.tsx";
 import { KeyboardHelp, KeyboardHelpButton, useKeyboardHelp } from "./keyboard-help.tsx";
 import { StatusToast, useStatusChanges } from "./job-status.tsx";
@@ -15,9 +15,8 @@ import { HeaderShortcuts, ShortcutsSection, useShortcuts } from "./shortcuts.tsx
 
 type TabId = "inbox" | "saved" | "applied" | "seen" | "companies";
 
-const tabs: { id: TabId; label: string; empty: string }[] = [
-  // The empty Inbox says why it is empty (see emptyListState); `empty` is for the other lists.
-  { id: "inbox", label: "Inbox", empty: "" },
+const tabs: { id: TabId; label: string; empty?: string }[] = [
+  { id: "inbox", label: "Inbox" },
   { id: "saved", label: "Saved", empty: "No saved Jobs yet." },
   { id: "applied", label: "Applied", empty: "No Jobs marked Applied yet." },
   { id: "seen", label: "Seen", empty: "No Jobs marked Seen yet." },
@@ -153,7 +152,7 @@ export function App() {
                 filter={filter.filter}
                 query={query}
                 empty={current.empty}
-                followsAnyCompany={companies.companies.length > 0}
+                loaded={{ jobsLoaded: jobs.loaded, companies: followedCompanies(companies) }}
                 onFollowCompany={openFollowCompany}
                 onAct={status.act}
                 onMarkAllSeen={status.markAllSeen}
@@ -168,20 +167,28 @@ export function App() {
   );
 }
 
+/** Whether any Company is followed, as far as the page knows. */
+function followedCompanies(state: CompaniesState): LoadState["companies"] {
+  if (state.loaded) return state.companies.length > 0 ? "some" : "none";
+  return state.loadError ? "failed" : "loading";
+}
+
 /** Every stored Job; the job-list module splits them into lists. */
 function useJobs() {
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const reload = useCallback(() => {
     call<{ jobs: Job[] }>("GET", "/api/jobs")
       .then((data) => {
         setJobs(data.jobs);
+        setLoaded(true);
         setLoadError(null);
       })
       .catch((err: Error) => setLoadError(`Couldn't load Jobs: ${err.message}`));
   }, []);
 
   useEffect(reload, [reload]);
-  return { jobs, setJobs, loadError, reload };
+  return { jobs, setJobs, loaded, loadError, reload };
 }

@@ -56,31 +56,41 @@ export function jobRows(jobs: readonly Job[], list: ListKind, filter: Filter, qu
 
 /** Why a list has no rows. */
 export type EmptyListState =
+  | { kind: "loading" }
   | { kind: "no-match"; query: string }
   | { kind: "no-company" }
   | { kind: "caught-up"; hiddenByFilter: number }
-  | { kind: "list" };
+  | { kind: "list-message" };
+
+/** What the page knows so far: whether the Jobs have loaded, and whether any Company is followed. */
+export interface LoadState {
+  jobsLoaded: boolean;
+  companies: "loading" | "failed" | "none" | "some";
+}
 
 /**
- * Why `jobRows(jobs, list, filter, query)` is empty: a search that matches nothing,
- * an Inbox with no Company followed, an Inbox with nothing new to review (some Unseen
- * Jobs maybe hidden by the Filter), or any other list's own empty message.
+ * Why `jobRows(jobs, list, filter, query)` is empty: not known yet (still loading), a search
+ * that matches nothing, an Inbox with no Company followed, an Inbox with nothing new to review
+ * (some Unseen Jobs maybe hidden by the Filter), or any other list's own empty message.
+ * When the Companies failed to load, the Inbox doesn't claim none are followed.
  */
 export function emptyListState(
   jobs: readonly Job[],
   list: ListKind,
   filter: Filter,
   query: string,
-  followsAnyCompany: boolean,
+  loaded: LoadState,
 ): EmptyListState {
+  if (!loaded.jobsLoaded) return { kind: "loading" };
   if (query.trim() !== "" && jobRows(jobs, list, filter, "").length > 0) return { kind: "no-match", query: query.trim() };
-  if (list !== "inbox") return { kind: "list" };
+  if (list !== "inbox") return { kind: "list-message" };
+  if (loaded.companies === "loading") return { kind: "loading" };
   const hiddenByFilter = jobs.filter((job) => job.status === "unseen" && !passesFilter(job, filter)).length;
-  if (!followsAnyCompany && hiddenByFilter === 0) return { kind: "no-company" };
+  if (loaded.companies === "none" && hiddenByFilter === 0) return { kind: "no-company" };
   return { kind: "caught-up", hiddenByFilter };
 }
 
-const titleCollator =new Intl.Collator("en", { sensitivity: "base", numeric: true });
+const titleCollator = new Intl.Collator("en", { sensitivity: "base", numeric: true });
 
 /** First-fetched date (newest first), then publication date (newest first, missing last), then title. */
 function compareJobs(a: Job, b: Job): number {

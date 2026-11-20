@@ -7,7 +7,9 @@ import {
   type Job,
   type JobRow,
   type ListKind,
+  type LoadState,
 } from "./job-list.ts";
+import { plural } from "./plural.ts";
 import { canApply } from "../shared/job-lifecycle.ts";
 import type { JobAction } from "../shared/types.ts";
 import { useGlobalKeys } from "./global-keys.ts";
@@ -24,7 +26,7 @@ export function JobListView({
   filter,
   query,
   empty,
-  followsAnyCompany,
+  loaded,
   onFollowCompany,
   onAct,
   onMarkAllSeen,
@@ -34,8 +36,8 @@ export function JobListView({
   filter: Filter;
   query: string;
   /** What an empty Saved, Applied or Seen list says; the Inbox says why it is empty. */
-  empty: string;
-  followsAnyCompany: boolean;
+  empty?: string;
+  loaded: LoadState;
   onFollowCompany: () => void;
   onAct: (job: Job, action: JobAction) => void;
   onMarkAllSeen: (jobs: Job[]) => void;
@@ -48,7 +50,7 @@ export function JobListView({
   if (rows.length === 0) {
     return (
       <EmptyList
-        state={emptyListState(jobs, list, filter, query, followsAnyCompany)}
+        state={emptyListState(jobs, list, filter, query, loaded)}
         empty={empty}
         onFollowCompany={onFollowCompany}
       />
@@ -91,8 +93,6 @@ export function JobListView({
   );
 }
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-
 /** What an empty list says: why it is empty, and for an Inbox without Companies, the way out. */
 function EmptyList({
   state,
@@ -100,13 +100,15 @@ function EmptyList({
   onFollowCompany,
 }: {
   state: EmptyListState;
-  empty: string;
+  empty?: string;
   onFollowCompany: () => void;
 }) {
   switch (state.kind) {
+    case "loading":
+      return null;
     case "no-match":
       return <p className="empty">No Jobs match “{state.query}”.</p>;
-    case "list":
+    case "list-message":
       return <p className="empty">{empty}</p>;
     case "no-company":
       return (
@@ -123,9 +125,8 @@ function EmptyList({
           <p>You're all caught up: nothing new to review.</p>
           {state.hiddenByFilter > 0 && (
             <p className="empty-detail">
-              {state.hiddenByFilter === 1
-                ? "1 Unseen Job is hidden by your Filter."
-                : `${state.hiddenByFilter} Unseen Jobs are hidden by your Filter.`}
+              {plural(state.hiddenByFilter, "Unseen Job")} {state.hiddenByFilter === 1 ? "is" : "are"} hidden by
+              your Filter.
             </p>
           )}
         </div>
