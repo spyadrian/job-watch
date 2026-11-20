@@ -103,3 +103,26 @@ test("offers a Shortcut, prefilled with the name and link, when nothing is found
   await expect(section).toContainText("Couldn't reach the page https://careers.unreachable.example/jobs");
   await expect(section.getByLabel("Shortcut link")).toHaveValue("https://careers.unreachable.example/jobs");
 });
+
+test("says when a site is read only up to the bound, and how to narrow it by location", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("tab", { name: /Companies/ }).click();
+  const section = page.getByRole("region", { name: "Follow a Company" });
+  const tip =
+    "To read one location only, paste the careers link with ?location=…, e.g. https://bigco.eightfold.ai/careers?domain=bigco.example&location=Switzerland";
+
+  await section.getByLabel("Link or Company name").fill("https://bigco.eightfold.ai/careers?domain=bigco.example");
+  await section.getByRole("button", { name: "Find jobs" }).click();
+  await expect(section.getByText("10 of 2626 jobs read")).toBeVisible();
+  await expect(section).toContainText(tip);
+
+  await section.getByRole("button", { name: "Follow" }).click();
+  await expect(section).toContainText("Following Bigco: 10 jobs added to your Inbox.");
+
+  const row = page
+    .getByRole("region", { name: "Followed Companies" })
+    .getByRole("listitem")
+    .filter({ has: page.getByText("Bigco", { exact: true }) });
+  await expect(row).toContainText("Only 10 of 2626 jobs read");
+  await expect(row).toContainText(tip);
+});

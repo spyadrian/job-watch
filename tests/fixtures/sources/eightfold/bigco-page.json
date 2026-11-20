@@ -1,0 +1,98 @@
+{
+  "status": 200,
+  "data": {
+    "count": 2626,
+    "positions": [
+      {
+        "id": 700000000000,
+        "name": "Hardware Engineer 1",
+        "locations": [
+          "Switzerland, Zurich"
+        ],
+        "postedTs": 1795132800,
+        "positionUrl": "/careers/job/700000000000"
+      },
+      {
+        "id": 700000000001,
+        "name": "Hardware Engineer 2",
+        "locations": [
+          "Switzerland, Zurich"
+        ],
+        "postedTs": 1795132800,
+        "positionUrl": "/careers/job/700000000001"
+      },
+      {
+        "id": 700000000002,
+        "name": "Hardware Engineer 3",
+        "locations": [
+          "Switzerland, Zurich"
+        ],
+        "postedTs": 1795132800,
+        "positionUrl": "/careers/job/700000000002"
+      },
+      {
+        "id": 700000000003,
+        "name": "Hardware Engineer 4",
+        "locations": [
+          "Switzerland, Zurich"
+        ],
+        "postedTs": 1795132800,
+        "positionUrl": "/careers/job/700000000003"
+      },
+      {
+        "id": 700000000004,
+        "name": "Hardware Engineer 5",
+        "locations": [
+          "Switzerland, Zurich"
+        ],
+        "postedTs": 1795132800,
+        "positionUrl": "/careers/job/700000000004"
+      },
+      {
+        "id": 700000000005,
+        "name": "Hardware Engineer 6",
+        "locations": [
+          "Switzerland, Zurich"
+        ],
+        "postedTs": 1795132800,
+        "positionUrl": "/careers/job/700000000005"
+      },
+      {
+        "id": 700000000006,
+        "name": "Hardware Engineer 7",
+        "locations": [
+          "Switzerland, Zurich"
+        ],
+        "postedTs": 1795132800,
+        "positionUrl": "/careers/job/700000000006"
+      },
+      {
+        "id": 700000000007,
+        "name": "Hardware Engineer 8",
+        "locations": [
+          "Switzerland, Zurich"
+        ],
+        "postedTs": 1795132800,
+        "positionUrl": "/careers/job/700000000007"
+      },
+      {
+        "id": 700000000008,
+        "name": "Hardware Engineer 9",
+        "locations": [
+          "Switzerland, Zurich"
+        ],
+        "postedTs": 1795132800,
+        "positionUrl": "/careers/job/700000000008"
+      },
+      {
+        "id": 700000000009,
+        "name": "Hardware Engineer 10",
+        "locations": [
+          "Switzerland, Zurich"
+        ],
+        "postedTs": 1795132800,
+        "positionUrl": "/careers/job/700000000009"
+      }
+    ]
+  }
+}
