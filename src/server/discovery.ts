@@ -1,7 +1,7 @@
 // Source discovery: from what the person typed to zero or more Candidates,
 // each read once through its adapter for an actual job count. Saves nothing.
 import type { Candidate, DiscoverResponse, SourceRef } from "../shared/types.ts";
-import { companyFollowing } from "./companies.ts";
+import { cappedRead, companyFollowing } from "./companies.ts";
 import type { Database } from "./db.ts";
 import { RequestError } from "./errors.ts";
 import { feedKey, feedSourceFromPage } from "./sources/feed.ts";
@@ -232,13 +232,16 @@ async function candidateFor(source: SourceRef, deps: DiscoveryDeps): Promise<Can
   const adapter = adapterFor(source.type)!;
   const read = await adapter.read(source.key, deps);
   const followed = companyFollowing(deps.db, source);
-  return {
+  const candidate: Candidate = {
     source,
     sourceLabel: adapter.label,
     suggestedName: read.companyName?.trim() || fallbackName(source),
     jobCount: read.jobs.length,
     alreadyFollowing: followed?.name ?? null,
   };
+  const capped = cappedRead(read);
+  if (capped) candidate.capped = capped;
+  return candidate;
 }
 
 /** A name for a Source that doesn't state one: from the site for a feed URL or a host key, else the slug. */

@@ -1,10 +1,10 @@
-import type { Company, JobStatus, SourceRef, SourceType } from "../shared/types.ts";
+import type { CappedRead, Company, JobStatus, SourceRef, SourceType } from "../shared/types.ts";
 import { becomeOutdated } from "../shared/job-lifecycle.ts";
 import type { AppDeps } from "./app.ts";
 import { inTransaction, type Database } from "./db.ts";
 import { RequestError } from "./errors.ts";
 import { insertJob } from "./jobs.ts";
-import { adapterFor, type NormalizedJob } from "./sources/index.ts";
+import { adapterFor, type SourceRead } from "./sources/index.ts";
 
 /** Following or renaming a Company was refused: blank name, already followed, unreadable Source… */
 export class CompanyRequestError extends RequestError {
@@ -29,26 +29,41 @@ export async function followCompany(
   if (!name) throw new CompanyRequestError("Give the Company a name.", 400);
   refuseIfFollowed(source, deps);
 
-  let jobs: NormalizedJob[];
+  let read: SourceRead;
   try {
-    jobs = (await adapter.read(source.key, deps)).jobs;
+    read = await adapter.read(source.key, deps);
   } catch (err) {
     throw new CompanyRequestError(err instanceof Error ? err.message : String(err), 502);
   }
 
   const { db } = deps;
+  const { jobs } = read;
+  const capped = cappedRead(read);
   const now = deps.clock.now().toISOString();
   return inTransaction(db, () => {
     refuseIfFollowed(source, deps); // the read was async: check again inside the transaction
     const { id } = db
-      .prepare("INSERT INTO company (name, source_type, source_key, created_at) VALUES (?, ?, ?, ?) RETURNING id")
-      .get(name, source.type, source.key, now) as { id: number };
+      .prepare(
+        "INSERT INTO company (name, source_type, source_key, created_at, capped_read, capped_total) VALUES (?, ?, ?, ?, ?, ?) RETURNING id",
+      )
+      .get(name, source.type, source.key, now, capped?.read ?? null, capped?.total ?? null) as { id: number };
     for (const job of jobs) insertJob(db, { id, name, source }, job, now);
-    return {
-      company: { id, name, source: { type: source.type, key: source.key }, sourceLabel: adapter.label, createdAt: now, lastError: null },
-      jobCount: jobs.length,
+    const company: Company = {
+      id,
+      name,
+      source: { type: source.type, key: source.key },
+      sourceLabel: adapter.label,
+      createdAt: now,
+      lastError: null,
     };
+    if (capped) company.capped = capped;
+    return { company, jobCount: jobs.length };
   });
+}
+
+/** How many Jobs a read that stopped at its adapter's bound read, of how many the Source has; else null. */
+export function cappedRead(read: SourceRead): CappedRead | null {
+  return read.capped ? { read: read.jobs.length, total: read.capped.total } : null;
 }
 
 /** The Company that follows this Source, if any. */
@@ -71,12 +86,15 @@ interface CompanyRow {
   last_error: string | null;
   last_error_at: string | null;
   created_at: string;
+  capped_read: number | null;
+  capped_total: number | null;
 }
 
-const selectCompany = "SELECT id, name, source_type, source_key, last_error, last_error_at, created_at FROM company";
+const selectCompany =
+  "SELECT id, name, source_type, source_key, last_error, last_error_at, created_at, capped_read, capped_total FROM company";
 
 function toCompany(row: CompanyRow): Company {
-  return {
+  const company: Company = {
     id: row.id,
     name: row.name,
     source: { type: row.source_type, key: row.source_key },
@@ -84,6 +102,8 @@ function toCompany(row: CompanyRow): Company {
     createdAt: row.created_at,
     lastError: row.last_error === null ? null : { message: row.last_error, at: row.last_error_at ?? row.created_at },
   };
+  if (row.capped_read !== null && row.capped_total !== null) company.capped = { read: row.capped_read, total: row.capped_total };
+  return company;
 }
 
 /** Every followed Company, by name (ignoring case), with its last read error if any. */

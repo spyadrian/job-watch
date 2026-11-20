@@ -14,5 +14,405 @@
   "https://www.initech.example/careers": {
     "file": "sources/careers/nothing.html",
     "contentType": "text/html; charset=utf-8"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=0&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=10&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=20&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=30&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=40&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=50&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=60&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=70&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=80&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=90&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=100&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=110&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=120&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=130&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=140&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=150&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=160&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=170&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=180&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=190&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=200&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=210&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=220&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=230&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=240&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=250&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=260&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=270&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=280&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=290&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=300&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=310&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=320&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=330&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=340&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=350&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=360&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=370&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=380&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=390&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=400&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=410&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=420&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=430&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=440&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=450&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=460&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=470&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=480&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=490&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=500&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=510&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=520&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=530&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=540&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=550&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=560&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=570&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=580&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=590&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=600&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=610&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=620&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=630&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=640&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=650&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=660&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=670&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=680&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=690&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=700&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=710&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=720&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=730&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=740&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=750&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=760&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=770&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=780&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=790&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=800&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=810&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=820&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=830&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=840&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=850&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=860&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=870&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=880&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=890&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=900&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=910&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=920&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=930&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=940&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=950&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=960&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=970&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=980&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
+  },
+  "https://bigco.eightfold.ai/api/pcsx/search?domain=bigco.example&query=&location=&start=990&sort_by=relevance": {
+    "file": "sources/eightfold/bigco-page.json",
+    "contentType": "application/json"
   }
 }

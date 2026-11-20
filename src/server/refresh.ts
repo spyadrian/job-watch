@@ -5,8 +5,9 @@ import { becomeOutdated } from "../shared/job-lifecycle.ts";
 import type { JobStatus, RefreshEvent, RefreshSummary, SourceType } from "../shared/types.ts";
 import type { AppDeps } from "./app.ts";
 import { inTransaction, type Database } from "./db.ts";
+import { cappedRead } from "./companies.ts";
 import { insertJob } from "./jobs.ts";
-import { adapterFor, type NormalizedJob } from "./sources/index.ts";
+import { adapterFor, type SourceRead } from "./sources/index.ts";
 
 /** How many Sources are read at the same time. */
 export const REFRESH_CONCURRENCY = 4;
@@ -121,9 +122,9 @@ async function refreshCompany(
   try {
     const adapter = adapterFor(company.source_type);
     if (!adapter) throw new Error(`Unsupported Source type "${company.source_type}"`);
-    const { jobs } = await adapter.read(company.source_key, deps);
+    const read = await adapter.read(company.source_key, deps);
     if (isCancelled()) return null;
-    const changes = storeRead(deps.db, company.id, jobs, deps.clock.now().toISOString());
+    const changes = storeRead(deps.db, company.id, read, deps.clock.now().toISOString());
     summary.new += changes.new;
     summary.outdated += changes.outdated;
     return null;
@@ -156,10 +157,12 @@ interface StoredJob {
 /**
  * Stores a successful read of a Company's Source in one transaction: inserts new
  * Jobs (Unseen, first fetched now), updates stored ones (status kept, current again),
- * makes absent ones Outdated, and clears the Company's error.
+ * makes absent ones Outdated, clears the Company's error and notes whether the read was capped.
  * Does nothing if the Company was removed meanwhile.
  */
-function storeRead(db: Database, companyId: number, jobs: NormalizedJob[], now: string): { new: number; outdated: number } {
+function storeRead(db: Database, companyId: number, read: SourceRead, now: string): { new: number; outdated: number } {
+  const { jobs } = read;
+  const capped = cappedRead(read);
   const changes = { new: 0, outdated: 0 };
   return inTransaction(db, () => {
     const company = db.prepare("SELECT id, name, source_type, source_key FROM company WHERE id = ?").get(companyId) as
@@ -195,7 +198,9 @@ function storeRead(db: Database, companyId: number, jobs: NormalizedJob[], now: 
       changes.outdated++;
     }
 
-    db.prepare("UPDATE company SET last_error = NULL, last_error_at = NULL WHERE id = ?").run(companyId);
+    db.prepare(
+      "UPDATE company SET last_error = NULL, last_error_at = NULL, capped_read = ?, capped_total = ? WHERE id = ?",
+    ).run(capped?.read ?? null, capped?.total ?? null, companyId);
     return changes;
   });
 }
