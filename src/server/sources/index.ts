@@ -5,6 +5,7 @@ import { feed } from "./feed.ts";
 import { greenhouse } from "./greenhouse.ts";
 import { ashby } from "./ashby.ts";
 import { lever, leverEu } from "./lever.ts";
+import { jibe } from "./jibe.ts";
 import { personio } from "./personio.ts";
 import { recruitee } from "./recruitee.ts";
 import { smartrecruiters } from "./smartrecruiters.ts";
@@ -22,6 +23,7 @@ export const adapters: readonly SourceAdapter[] = [
   workable,
   personio,
   bamboohr,
+  jibe,
   feed,
 ];
 
