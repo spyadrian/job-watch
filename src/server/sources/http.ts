@@ -8,9 +8,18 @@ export const SOURCE_TIMEOUT_MS = 15_000;
  * Network errors, timeouts and non-2xx answers become a SourceError.
  */
 export async function getText(ctx: SourceContext, url: string, what: string): Promise<string> {
+  return requestText(ctx, url, {}, what);
+}
+
+/** Sends a request with the Source timeout; network errors, timeouts and non-2xx answers become a SourceError. */
+async function requestText(ctx: SourceContext, url: string, init: RequestInit, what: string): Promise<string> {
   let res: Response;
   try {
-    res = await ctx.fetch(url, { signal: AbortSignal.timeout(ctx.sourceTimeoutMs ?? SOURCE_TIMEOUT_MS), redirect: "follow" });
+    res = await ctx.fetch(url, {
+      ...init,
+      signal: AbortSignal.timeout(ctx.sourceTimeoutMs ?? SOURCE_TIMEOUT_MS),
+      redirect: "follow",
+    });
   } catch (err) {
     const timedOut = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
     throw new SourceError(timedOut ? `${what} didn't answer in time` : `Couldn't reach ${what}`);
@@ -26,7 +35,20 @@ function capitalize(text: string): string {
 
 /** Like getText, then parses JSON; an unparsable body is a SourceError. */
 export async function getJson(ctx: SourceContext, url: string, what: string): Promise<unknown> {
-  const text = await getText(ctx, url, what);
+  return parseJson(await getText(ctx, url, what), what);
+}
+
+/** POSTs `body` as JSON (for APIs that only answer a JSON search request), then parses the JSON answer like getJson. */
+export async function postJson(ctx: SourceContext, url: string, body: unknown, what: string): Promise<unknown> {
+  const init: RequestInit = {
+    method: "POST",
+    body: JSON.stringify(body),
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+  };
+  return parseJson(await requestText(ctx, url, init, what), what);
+}
+
+function parseJson(text: string, what: string): unknown {
   try {
     return JSON.parse(text);
   } catch {

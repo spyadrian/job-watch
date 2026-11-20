@@ -8,6 +8,8 @@ describe("recorded fetch", () => {
     "https://boards-api.example.com/v1/boards/acme/jobs": { body: { jobs: [{ id: 1 }] } },
     "https://acme.example.com/feed?paged=2": { file: "tests/fixtures/sources/example/feed.xml", contentType: "application/rss+xml" },
     "https://down.example.com/": { status: 503, body: "Service Unavailable" },
+    'POST https://api.example.com/jobs {"offset":0,"limit":20}': { body: { page: 1 } },
+    'POST https://api.example.com/jobs {"offset":20,"limit":20}': { body: { page: 2 } },
   });
 
   it("serves an inline JSON body", async () => {
@@ -29,5 +31,23 @@ describe("recorded fetch", () => {
 
   it("fails like a network error for URLs that were not recorded", async () => {
     await expect(fetch("https://unknown.example.com/")).rejects.toThrow(TypeError);
+  });
+
+  it("serves a POST by URL and JSON body, whatever the order of the body's keys", async () => {
+    const post = (body: unknown) =>
+      fetch("https://api.example.com/jobs", {
+        method: "POST",
+        body: JSON.stringify(body),
+        headers: { "content-type": "application/json" },
+      });
+    expect(await (await post({ limit: 20, offset: 0 })).json()).toEqual({ page: 1 });
+    expect(await (await post({ limit: 20, offset: 20 })).json()).toEqual({ page: 2 });
+  });
+
+  it("fails like a network error for a POST body that was not recorded, or a GET of a POST-only URL", async () => {
+    await expect(
+      fetch("https://api.example.com/jobs", { method: "POST", body: '{"offset":40,"limit":20}' }),
+    ).rejects.toThrow(TypeError);
+    await expect(fetch("https://api.example.com/jobs")).rejects.toThrow(TypeError);
   });
 });

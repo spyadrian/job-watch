@@ -101,10 +101,11 @@ async function readCandidates(refs: SourceRef[], deps: DiscoveryDeps): Promise<D
 }
 
 /**
- * Source types whose key a name can't give without guessing a host: a feed's URL, and
- * the host of a Jibe careers site (on the employer's own domain).
+ * Source types whose key a name can't give without guessing a host: a feed's URL, the
+ * host of a Jibe careers site (on the employer's own domain), and a Workday site
+ * (tenant, data centre and site name).
  */
-const NOT_BY_NAME: ReadonlySet<string> = new Set(["feed", "jibe"]);
+const NOT_BY_NAME: ReadonlySet<string> = new Set(["feed", "jibe", "workday"]);
 
 /**
  * Tries a Company name's candidate slugs on every ATS in parallel. A board that
@@ -241,7 +242,8 @@ async function candidateFor(source: SourceRef, deps: DiscoveryDeps): Promise<Can
 function fallbackName(source: SourceRef): string {
   if (source.type === "feed") return nameFromHost(source.key);
   if (source.type === "jibe") return nameFromHost(`https://${source.key}`);
-  return nameFromKey(source.key);
+  const adapter = adapterFor(source.type);
+  return nameFromKey(adapter?.nameFromKey ? adapter.nameFromKey(source.key) : source.key);
 }
 
 /** A host name a person could type: labels, then a real-looking top-level domain. */

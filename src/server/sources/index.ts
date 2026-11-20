@@ -10,6 +10,7 @@ import { personio } from "./personio.ts";
 import { recruitee } from "./recruitee.ts";
 import { smartrecruiters } from "./smartrecruiters.ts";
 import { workable } from "./workable.ts";
+import { workday } from "./workday.ts";
 import { bamboohr } from "./bamboohr.ts";
 import type { SourceAdapter, SourceType } from "./types.ts";
 
@@ -24,6 +25,7 @@ export const adapters: readonly SourceAdapter[] = [
   personio,
   bamboohr,
   jibe,
+  workday,
   feed,
 ];
 

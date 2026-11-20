@@ -1,0 +1,33 @@
+{
+  "total": 3,
+  "jobPostings": [
+    {
+      "title": "Junior AI Tooling & Governance Specialist",
+      "externalPath": "/job/Belgrade/AI-Tooling---Governance-Lead_JR100971",
+      "locationsText": "Belgrade",
+      "postedOn": "Posted Today",
+      "bulletFields": [
+        "JR100971"
+      ]
+    },
+    {
+      "title": "Advanced Payable Accountant Specialist",
+      "externalPath": "/job/Belgrade/Advanced-Payable-Accountant-Specialist_JR101015-1",
+      "locationsText": "Belgrade",
+      "postedOn": "Posted Yesterday",
+      "bulletFields": [
+        "JR101015"
+      ]
+    },
+    {
+      "title": "Senior/Lead Enterprise Architecture Consultant",
+      "externalPath": "/job/Schlieren/Lead-Enterprise-Architecture-Consultant_JR100999",
+      "locationsText": "2 Locations",
+      "postedOn": "Posted Yesterday",
+      "bulletFields": [
+        "JR100999"
+      ]
+    }
+  ],
+  "userAuthenticated": false
+}
