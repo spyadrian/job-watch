@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent, type Ref } from "react";
 import type { Candidate, CreateCompanyResponse, DiscoverResponse } from "../shared/types.ts";
 import { call } from "./api.ts";
 
@@ -47,9 +47,12 @@ export function shortcutDraft(input: string): { name: string; url: string } {
 export function FollowCompany({
   onFollowed,
   onAddShortcut,
+  inputRef,
 }: {
   onFollowed: () => void;
   onAddShortcut: (name: string, url: string) => Promise<void>;
+  /** The link-or-name input, for callers that bring the person straight to it. */
+  inputRef?: Ref<HTMLInputElement>;
 }) {
   const [input, setInput] = useState("");
   const [step, setStep] = useState<Step>({ kind: "idle" });
@@ -137,6 +140,7 @@ export function FollowCompany({
         <label className="grow">
           <span>Link or Company name</span>
           <input
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="https://job-boards.greenhouse.io/… or Acme"

@@ -68,7 +68,8 @@ test("Mark all as seen marks only the Jobs visible in the Inbox", async ({ page 
 
   await page.getByRole("button", { name: "Mark all as seen" }).click();
 
-  await expect(page.getByText("No Jobs pass your Filter")).toBeVisible();
+  await expect(page.getByText("You're all caught up: nothing new to review.")).toBeVisible();
+  await expect(page.getByText("1 Unseen Job is hidden by your Filter.")).toBeVisible();
   await expect(tab(page, "Seen")).toHaveAccessibleName("Seen 2");
   const jobs = ((await (await page.request.get("/api/jobs")).json()) as { jobs: Job[] }).jobs;
   expect(jobs.find((j) => j.title === "Office Manager")!.status).toBe("unseen");

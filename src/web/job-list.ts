@@ -54,7 +54,33 @@ export function jobRows(jobs: readonly Job[], list: ListKind, filter: Filter, qu
     });
 }
 
-const titleCollator = new Intl.Collator("en", { sensitivity: "base", numeric: true });
+/** Why a list has no rows. */
+export type EmptyListState =
+  | { kind: "no-match"; query: string }
+  | { kind: "no-company" }
+  | { kind: "caught-up"; hiddenByFilter: number }
+  | { kind: "list" };
+
+/**
+ * Why `jobRows(jobs, list, filter, query)` is empty: a search that matches nothing,
+ * an Inbox with no Company followed, an Inbox with nothing new to review (some Unseen
+ * Jobs maybe hidden by the Filter), or any other list's own empty message.
+ */
+export function emptyListState(
+  jobs: readonly Job[],
+  list: ListKind,
+  filter: Filter,
+  query: string,
+  followsAnyCompany: boolean,
+): EmptyListState {
+  if (query.trim() !== "" && jobRows(jobs, list, filter, "").length > 0) return { kind: "no-match", query: query.trim() };
+  if (list !== "inbox") return { kind: "list" };
+  const hiddenByFilter = jobs.filter((job) => job.status === "unseen" && !passesFilter(job, filter)).length;
+  if (!followsAnyCompany && hiddenByFilter === 0) return { kind: "no-company" };
+  return { kind: "caught-up", hiddenByFilter };
+}
+
+const titleCollator =new Intl.Collator("en", { sensitivity: "base", numeric: true });
 
 /** First-fetched date (newest first), then publication date (newest first, missing last), then title. */
 function compareJobs(a: Job, b: Job): number {

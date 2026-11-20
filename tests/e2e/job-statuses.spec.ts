@@ -67,6 +67,27 @@ test("moves Jobs between lists with Seen, Save and Applied, with counts and an u
   await expectCounts(page, { Inbox: 3, Seen: 0 });
 });
 
+test("the Inbox header counts its Jobs, and an Inbox with every Job triaged is caught up", async ({ page }) => {
+  await followAcme(page);
+  await page.goto("/");
+  const actions = page.locator(".list-actions");
+  await expect(actions).toContainText("3 Jobs");
+  await expect(actions.getByText(/Marks the/)).toHaveCount(0);
+
+  // Narrow screens: the bar fits, no horizontal scroll.
+  await page.setViewportSize({ width: 320, height: 640 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  const bar = (await actions.boundingBox())!;
+  expect(bar.x + bar.width).toBeLessThanOrEqual(320);
+
+  await row(page, "Senior Backend Engineer").getByRole("button", { name: "Seen" }).click();
+  await expect(actions).toContainText("2 Jobs");
+
+  await page.getByRole("button", { name: "Mark all as seen" }).click();
+  await expect(page.getByRole("tabpanel")).toContainText("You're all caught up: nothing new to review.");
+  await expect(page.getByText(/hidden by your Filter/)).toHaveCount(0);
+});
+
 test("the toast disappears on its own and statuses survive a reload", async ({ page }) => {
   await followAcme(page);
   await page.goto("/");

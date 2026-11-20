@@ -16,7 +16,8 @@ import { HeaderShortcuts, ShortcutsSection, useShortcuts } from "./shortcuts.tsx
 type TabId = "inbox" | "saved" | "applied" | "seen" | "companies";
 
 const tabs: { id: TabId; label: string; empty: string }[] = [
-  { id: "inbox", label: "Inbox", empty: "Your Inbox is empty. Follow a Company to see its Jobs here." },
+  // The empty Inbox says why it is empty (see emptyListState); `empty` is for the other lists.
+  { id: "inbox", label: "Inbox", empty: "" },
   { id: "saved", label: "Saved", empty: "No saved Jobs yet." },
   { id: "applied", label: "Applied", empty: "No Jobs marked Applied yet." },
   { id: "seen", label: "Seen", empty: "No Jobs marked Seen yet." },
@@ -39,6 +40,20 @@ export function App() {
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
   const help = useKeyboardHelp();
+  const followInputRef = useRef<HTMLInputElement>(null);
+  const focusFollowInput = useRef(false);
+
+  // "Follow a Company" from the empty Inbox: once the Companies tab is shown, focus its follow input.
+  useEffect(() => {
+    if (active !== "companies" || !focusFollowInput.current) return;
+    focusFollowInput.current = false;
+    followInputRef.current?.focus();
+  }, [active]);
+
+  function openFollowCompany() {
+    focusFollowInput.current = true;
+    setActive("companies");
+  }
 
   useGlobalKeys({
     "/": () => {
@@ -117,6 +132,7 @@ export function App() {
                   companies.reload();
                 }}
                 onAddShortcut={shortcuts.add}
+                inputRef={followInputRef}
               />
               <CompaniesSection state={companies} />
               <ShortcutsSection state={shortcuts} />
@@ -137,6 +153,8 @@ export function App() {
                 filter={filter.filter}
                 query={query}
                 empty={current.empty}
+                followsAnyCompany={companies.companies.length > 0}
+                onFollowCompany={openFollowCompany}
                 onAct={status.act}
                 onMarkAllSeen={status.markAllSeen}
               />
