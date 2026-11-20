@@ -18,7 +18,7 @@ An account-free job watcher: follow the Companies you care about and review thei
 ## Why
 
 - **No account, no hosted service.** Job Watch runs locally, bound to `127.0.0.1`. Your Companies, Filter and statuses stay in one SQLite file on your machine.
-- **Official Sources only, no HTML scraping.** The server reads Jobs from public ATS job board APIs and RSS/Atom feeds and never scrapes them out of HTML pages, which would be fragile and break many sites' terms of service. A local server is still needed because most feeds can't be read from a browser (no CORS). See [ADR 0001](docs/adr/0001-local-only-app-no-html-scraping.md).
+- **Official Sources only, no HTML scraping.** The server reads Jobs from public ATS job board APIs, the public JSON APIs careers sites call themselves, and RSS/Atom feeds, and never scrapes them out of HTML pages, which would be fragile and break many sites' terms of service. A local server is still needed because most feeds can't be read from a browser (no CORS). See [ADR 0001](docs/adr/0001-local-only-app-no-html-scraping.md) and [ADR 0002](docs/adr/0002-careers-site-json-apis-count-as-sources.md).
 
 ## Getting started
 

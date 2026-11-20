@@ -11,7 +11,7 @@ An employer the person follows, attached to exactly one Source.
 _Avoid_: Employer, organization, board
 
 **Source**:
-The official, public, machine-readable listing of a Company's open Jobs (an ATS job board API or an RSS/Atom feed).
+The official, public, machine-readable listing of a Company's open Jobs (an ATS job board API, the public JSON API a careers site itself calls, or an RSS/Atom feed). See ADR 0002.
 _Avoid_: Feed (when meaning a Company's listing), provider, integration
 
 **Shortcut**:
