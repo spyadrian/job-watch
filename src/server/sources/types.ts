@@ -59,8 +59,11 @@ export interface SourceAdapter {
 
 /** A Source couldn't be read; `message` is shown to the person as-is. */
 export class SourceError extends Error {
-  constructor(message: string) {
+  /** The HTTP status the Source answered with, when that is why it failed. */
+  readonly status?: number;
+  constructor(message: string, status?: number) {
     super(message);
+    if (status !== undefined) this.status = status;
     this.name = "SourceError";
   }
 }

@@ -7,6 +7,7 @@ import { ashby } from "./ashby.ts";
 import { lever, leverEu } from "./lever.ts";
 import { jibe } from "./jibe.ts";
 import { oracleHcm } from "./oracle-hcm.ts";
+import { eightfold } from "./eightfold.ts";
 import { personio } from "./personio.ts";
 import { recruitee } from "./recruitee.ts";
 import { smartrecruiters } from "./smartrecruiters.ts";
@@ -28,6 +29,7 @@ export const adapters: readonly SourceAdapter[] = [
   jibe,
   workday,
   oracleHcm,
+  eightfold,
   feed,
 ];
 

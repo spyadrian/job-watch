@@ -8,11 +8,19 @@ export const SOURCE_TIMEOUT_MS = 15_000;
  * Network errors, timeouts and non-2xx answers become a SourceError.
  */
 export async function getText(ctx: SourceContext, url: string, what: string): Promise<string> {
-  return requestText(ctx, url, {}, what);
+  return (await getPage(ctx, url, what)).text;
 }
 
-/** Sends a request with the Source timeout; network errors, timeouts and non-2xx answers become a SourceError. */
-async function requestText(ctx: SourceContext, url: string, init: RequestInit, what: string): Promise<string> {
+/** Like getText, also telling the URL the body finally came from (after redirects). */
+export async function getPage(ctx: SourceContext, url: string, what: string): Promise<{ url: string; text: string }> {
+  return request(ctx, url, {}, what);
+}
+
+/**
+ * Sends a request with the Source timeout and returns the body with the URL it finally
+ * came from; network errors, timeouts and non-2xx answers become a SourceError.
+ */
+async function request(ctx: SourceContext, url: string, init: RequestInit, what: string): Promise<{ url: string; text: string }> {
   let res: Response;
   try {
     res = await ctx.fetch(url, {
@@ -24,9 +32,9 @@ async function requestText(ctx: SourceContext, url: string, init: RequestInit, w
     const timedOut = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
     throw new SourceError(timedOut ? `${what} didn't answer in time` : `Couldn't reach ${what}`);
   }
-  if (res.status === 404) throw new SourceError(`${capitalize(what)} doesn't exist (HTTP 404)`);
-  if (!res.ok) throw new SourceError(`${capitalize(what)} answered with an error (HTTP ${res.status})`);
-  return res.text();
+  if (res.status === 404) throw new SourceError(`${capitalize(what)} doesn't exist (HTTP 404)`, 404);
+  if (!res.ok) throw new SourceError(`${capitalize(what)} answered with an error (HTTP ${res.status})`, res.status);
+  return { url: res.url || url, text: await res.text() };
 }
 
 function capitalize(text: string): string {
@@ -45,7 +53,7 @@ export async function postJson(ctx: SourceContext, url: string, body: unknown, w
     body: JSON.stringify(body),
     headers: { "Content-Type": "application/json", Accept: "application/json" },
   };
-  return parseJson(await requestText(ctx, url, init, what), what);
+  return parseJson((await request(ctx, url, init, what)).text, what);
 }
 
 function parseJson(text: string, what: string): unknown {

@@ -5,7 +5,7 @@ import { companyFollowing } from "./companies.ts";
 import type { Database } from "./db.ts";
 import { RequestError } from "./errors.ts";
 import { feedKey, feedSourceFromPage } from "./sources/feed.ts";
-import { getText } from "./sources/http.ts";
+import { getPage } from "./sources/http.ts";
 import { adapters, adapterFor, SourceError, type SourceContext } from "./sources/index.ts";
 
 /** The input can't be used, or no Source it designates could be read. */
@@ -78,7 +78,8 @@ async function discoverByLink(url: URL, deps: DiscoveryDeps): Promise<DiscoverRe
     const feedRef = feedSourceFromPage(url, page.body);
     if (feedRef) return readCandidates([feedRef], deps);
   }
-  const inPage = "body" in page ? sourcesInPage(url, page.body) : [];
+  // Read against where the page finally came from: a site may redirect to another host.
+  const inPage = "body" in page ? sourcesInPage(page.url, page.body) : [];
   const boards = inPage.filter((ref) => ref.type !== "feed");
   if (boards.length > 0) return readCandidates(boards, deps);
 
@@ -102,10 +103,11 @@ async function readCandidates(refs: SourceRef[], deps: DiscoveryDeps): Promise<D
 
 /**
  * Source types whose key a name can't give without guessing a host: a feed's URL, the
- * host of a Jibe careers site (on the employer's own domain), a Workday site (tenant,
- * data centre and site name), and an Oracle Cloud HCM instance host and site number.
+ * host of a Jibe or Eightfold careers site (often on the employer's own domain), a
+ * Workday site (tenant, data centre and site name), and an Oracle Cloud HCM instance
+ * host and site number.
  */
-const NOT_BY_NAME: ReadonlySet<string> = new Set(["feed", "jibe", "workday", "oracle-hcm"]);
+const NOT_BY_NAME: ReadonlySet<string> = new Set(["feed", "jibe", "eightfold", "workday", "oracle-hcm"]);
 
 /**
  * Tries a Company name's candidate slugs on every ATS in parallel. A board that
@@ -216,9 +218,10 @@ function decodeEntities(value: string): string {
 }
 
 /** The body behind a link, or why it can't be fetched (then it yields no Source). */
-async function fetchPage(url: URL, deps: DiscoveryDeps): Promise<{ body: string } | { unreachable: string }> {
+async function fetchPage(url: URL, deps: DiscoveryDeps): Promise<{ url: URL; body: string } | { unreachable: string }> {
   try {
-    return { body: await getText(deps, url.href, `the page ${url.href}`) };
+    const page = await getPage(deps, url.href, `the page ${url.href}`);
+    return { url: new URL(page.url), body: page.text };
   } catch (err) {
     if (err instanceof SourceError) return { unreachable: err.message };
     throw err;
@@ -241,6 +244,8 @@ async function candidateFor(source: SourceRef, deps: DiscoveryDeps): Promise<Can
 /** A name for a Source that doesn't state one: from the site for a feed URL or a host key, else the slug. */
 function fallbackName(source: SourceRef): string {
   if (source.type === "feed") return nameFromHost(source.key);
+  // "jobs.nvidia.com/nvidia.com": named after the tenant's domain.
+  if (source.type === "eightfold") return nameFromHost(`https://${source.key.split("/")[1] ?? source.key}`);
   if (source.type === "jibe") return nameFromHost(`https://${source.key}`);
   const adapter = adapterFor(source.type);
   return nameFromKey(adapter?.nameFromKey ? adapter.nameFromKey(source.key) : source.key);

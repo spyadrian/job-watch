@@ -21,6 +21,7 @@ const SUPPORTED_BOARDS = [
   "iCIMS (Jibe)",
   "Workday",
   "Oracle Cloud HCM",
+  "Eightfold",
 ];
 const supportedBoards = new Intl.ListFormat("en", { type: "disjunction" }).format(SUPPORTED_BOARDS);
 

@@ -9,6 +9,8 @@ export interface RecordedResponse {
   body?: unknown;
   /** Path of a fixture file holding the body, relative to the manifest (or absolute). */
   file?: string;
+  /** With a 3xx status: where the response redirects to (followed unless `redirect: "manual"`). */
+  location?: string;
 }
 
 /**
@@ -26,12 +28,17 @@ export function createRecordedFetch(sources: RecordedSources, baseDir = process.
   for (const [key, res] of Object.entries(sources)) table.set(normalizeKey(key), res);
 
   return async (input, init) => {
-    const url = input instanceof Request ? input.url : String(input);
+    let url = input instanceof Request ? input.url : String(input);
     init?.signal?.throwIfAborted();
     const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
-    const key = method === "GET" ? url : `${method} ${url} ${typeof init?.body === "string" ? init.body : ""}`;
-    const recorded = table.get(normalizeKey(key));
-    if (!recorded) throw new TypeError(`fetch failed: no recorded response for ${key}`);
+    const keyFor = (u: string) => (method === "GET" ? u : `${method} ${u} ${typeof init?.body === "string" ? init.body : ""}`);
+    let recorded = table.get(normalizeKey(keyFor(url)));
+    for (let hops = 0; recorded?.location !== undefined && init?.redirect !== "manual"; hops++) {
+      if (hops === 20) throw new TypeError(`fetch failed: too many redirects from ${url}`);
+      url = new URL(recorded.location, url).href;
+      recorded = table.get(normalizeKey(keyFor(url)));
+    }
+    if (!recorded) throw new TypeError(`fetch failed: no recorded response for ${keyFor(url)}`);
 
     let body: string;
     if (recorded.file !== undefined) body = readFileSync(resolve(baseDir, recorded.file), "utf8");
@@ -40,7 +47,12 @@ export function createRecordedFetch(sources: RecordedSources, baseDir = process.
 
     const contentType =
       recorded.contentType ?? (typeof recorded.body === "string" || recorded.file ? "text/plain" : "application/json");
-    return new Response(body, { status: recorded.status ?? 200, headers: { "content-type": contentType } });
+    const headers: Record<string, string> = { "content-type": contentType };
+    if (recorded.location !== undefined) headers.location = recorded.location;
+    const res = new Response(body, { status: recorded.status ?? 200, headers });
+    // Like a real fetch, the response tells the URL it finally came from.
+    Object.defineProperty(res, "url", { value: url });
+    return res;
   };
 }
 

@@ -1,0 +1,68 @@
+{
+  "status": 200,
+  "error": {
+    "message": "",
+    "body": ""
+  },
+  "data": {
+    "positions": [
+      {
+        "id": 893398806259,
+        "displayJobId": "JR2030272",
+        "name": "Senior DevOps and Infrastructure Engineer",
+        "locations": [
+          "US, CA, Santa Clara"
+        ],
+        "standardizedLocations": [
+          "Santa Clara, CA, US"
+        ],
+        "postedTs": 1795132800,
+        "department": "Engineer, Sys SW",
+        "creationTs": 1795132800,
+        "workLocationOption": "onsite",
+        "atsJobId": "JR2030272",
+        "positionUrl": "/careers/job/893398806259"
+      },
+      {
+        "id": 893398023834,
+        "displayJobId": "JR2027105",
+        "name": "Senior Production Engineer  - DGX Cloud",
+        "locations": [
+          "Remote - Switzerland",
+          "Switzerland, Zurich"
+        ],
+        "standardizedLocations": [
+          "CH",
+          "Zürich, ZH, CH"
+        ],
+        "postedTs": 1795132800,
+        "department": "Engineer, Sys SW",
+        "creationTs": 1790899200,
+        "workLocationOption": "remote_local",
+        "atsJobId": "JR2027105",
+        "positionUrl": "/careers/job/893398023834"
+      },
+      {
+        "id": 893398741548,
+        "displayJobId": "JR2029987",
+        "name": "Datacenter Technician",
+        "locations": [
+          "India, Bengaluru"
+        ],
+        "standardizedLocations": [
+          "Bengaluru, KA, IN"
+        ],
+        "postedTs": 1795132800,
+        "department": "Engineer, Data Center",
+        "creationTs": 1794441600,
+        "workLocationOption": "onsite",
+        "atsJobId": "JR2029987",
+        "positionUrl": "/careers/job/893398741548"
+      }
+    ],
+    "count": 3,
+    "sortBy": "timestamp",
+    "appliedFilters": {}
+  },
+  "metadata": null
+}
