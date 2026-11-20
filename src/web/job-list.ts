@@ -28,7 +28,7 @@ export interface JobRow {
   highlights: RowHighlights;
 }
 
-export const emptyFilter: Filter = { cities: [], required: [], boosted: [], excluded: [] };
+export const emptyFilter: Filter = { cities: [], required: [], boosted: [], excluded: [], includeRemote: true };
 
 const statusOfList: Record<ListKind, JobStatus> = {
   inbox: "unseen",

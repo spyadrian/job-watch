@@ -108,4 +108,6 @@ export interface Filter {
   required: string[];
   boosted: string[];
   excluded: string[];
+  /** Whether a Job with a remote location passes City filters ("Include remote Jobs"). */
+  includeRemote: boolean;
 }
