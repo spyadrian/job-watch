@@ -108,7 +108,8 @@ async function readCandidates(refs: SourceRef[], deps: DiscoveryDeps): Promise<D
 async function discoverByName(name: string, deps: DiscoveryDeps): Promise<Candidate[]> {
   const slugs = slugsForName(name);
   const tries = adapters
-    .filter((adapter) => adapter.type !== "feed")
+    // A feed has no name-derived URL; adapters needing a per-Company host opt out.
+    .filter((adapter) => adapter.type !== "feed" && adapter.discoverableByName !== false)
     .flatMap((adapter) => slugs.map((slug) => ({ adapter, ref: { type: adapter.type, key: slug } })));
   const results = await Promise.allSettled(
     tries.map(async ({ adapter, ref }) => {

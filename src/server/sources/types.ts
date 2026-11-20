@@ -44,6 +44,11 @@ export interface SourceAdapter {
    * (instead of an error), so an empty read doesn't prove the Company is there.
    */
   unknownKeyReadsEmpty?: boolean;
+  /**
+   * False when a Company's name can't be turned into a key without guessing a host
+   * (e.g. a per-customer instance); name discovery then skips this adapter.
+   */
+  discoverableByName?: boolean;
   /** Reads every Job of the Source. Throws SourceError on any failure; never returns a partial list. */
   read(key: string, ctx: SourceContext): Promise<SourceRead>;
 }

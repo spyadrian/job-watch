@@ -17,6 +17,7 @@ const SUPPORTED_BOARDS = [
   "Recruitee",
   "Workable",
   "Personio",
+  "Oracle Cloud HCM",
 ];
 const supportedBoards = new Intl.ListFormat("en", { type: "disjunction" }).format(SUPPORTED_BOARDS);
 
