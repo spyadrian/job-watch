@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import type { CompaniesResponse, Company, CompanyError } from "../shared/types.ts";
 import { call } from "./api.ts";
+import { cappedCount, NarrowingTip } from "./capped-read.tsx";
 import { ManagedRow } from "./managed-row.tsx";
 import { timeAgo } from "./time-ago.ts";
 
@@ -95,6 +96,17 @@ function CompanyErrorBadge({ error }: { error: CompanyError }) {
   );
 }
 
+/** The last good read stopped at the most Jobs read from one Source: says so and how to narrow it. */
+function CompanyCappedNotice({ company }: { company: Company }) {
+  if (!company.capped) return null;
+  return (
+    <span className="company-capped">
+      <span className="company-capped-label">Only {cappedCount(company.capped)}</span>{" "}
+      <NarrowingTip source={company.source} />
+    </span>
+  );
+}
+
 function CompanyRow({
   company,
   state,
@@ -114,6 +126,7 @@ function CompanyRow({
       <span className="company-name">{company.name}</span>
       <span className="managed-detail">{company.sourceLabel}</span>
       {company.lastError && <CompanyErrorBadge error={company.lastError} />}
+      <CompanyCappedNotice company={company} />
     </ManagedRow>
   );
 }

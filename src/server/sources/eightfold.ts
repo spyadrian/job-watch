@@ -5,10 +5,15 @@
 // `domain` names the tenant on that host; it is stated in the site's pages, in
 // <code id="pcsx-data">{"domain": "nvidia.com", …}</code>, which is how discovery
 // recognises a site on a custom domain (Jobs are never read from the page).
-// The key is "{host}/{domain}", e.g. "jobs.nvidia.com/nvidia.com".
+// The key is "{host}/{domain}", e.g. "jobs.nvidia.com/nvidia.com". A careers link that
+// carries `location=…` (jobs.nvidia.com/careers?location=Switzerland) narrows the site
+// to that location, as its own search does: the key is then
+// "{host}/{domain}?location={location}", the location as given (unencoded), so one site
+// can be followed whole and for each location.
 // Pages hold 10 Jobs whatever is asked; they are read one after the other until the
 // count the first page gives, and never more than MAX_PAGES (1000 Jobs, as for
-// SmartRecruiters). The default sort (by posting day) pages unstably: Jobs posted
+// SmartRecruiters); a read stopped there says it was capped and how many Jobs the site
+// has, so the person can narrow it by location. The default sort (by posting day) pages unstably: Jobs posted
 // the same day swap between pages, so some appear twice and others never (PayPal,
 // 2026-11-20: 339 distinct of 354). Sorting by relevance for an empty query reads
 // them all (354 of 354).
@@ -46,23 +51,23 @@ export const eightfold: SourceAdapter = {
   matchLink(url) {
     // https://{company}.eightfold.ai/careers?domain={domain}… states both parts of the key.
     if (!url.hostname.endsWith(".eightfold.ai")) return null;
-    return keyOf(url.hostname, url.searchParams.get("domain"));
+    return keyOf(url.hostname, url.searchParams.get("domain"), url.searchParams.get("location"));
   },
 
   matchPage(pageUrl, html) {
     const data = /<code\b[^>]*\bid\s*=\s*["']pcsx-data["'][^>]*>([\s\S]*?)<\/code>/i.exec(html)?.[1];
     if (!data) return null;
     const domain = /"domain"\s*:\s*"([^"]+)"/.exec(data.replaceAll("&#34;", '"').replaceAll("&quot;", '"'))?.[1];
-    return keyOf(pageUrl.hostname, domain ?? null);
+    return keyOf(pageUrl.hostname, domain ?? null, pageUrl.searchParams.get("location"));
   },
 
   async read(key, ctx) {
-    const [host, domain] = key.split("/");
+    const { host, domain, location } = partsOf(key);
     if (!host || !domain) throw new SourceError(`"${key}" isn't an Eightfold careers site`);
     const what = `the Eightfold careers site ${host}`;
     const unexpected = `The Eightfold careers site ${host} answered in an unexpected format`;
     const pageAt = async (start: number) => {
-      const url = `https://${host}/api/pcsx/search?domain=${encodeURIComponent(domain)}&query=&location=&start=${start}&sort_by=relevance`;
+      const url = `https://${host}/api/pcsx/search?domain=${encodeURIComponent(domain)}&query=&location=${encodeURIComponent(location)}&start=${start}&sort_by=relevance`;
       const data = ((await getPatiently(() => getJson(ctx, url, what))) as SearchAnswer | null)?.data;
       if (!Array.isArray(data?.positions)) throw new SourceError(unexpected);
       return { positions: data.positions, count: data.count };
@@ -70,11 +75,15 @@ export const eightfold: SourceAdapter = {
 
     // Any page failing fails the whole read.
     const positions: Position[] = [];
-    for (let page = 0; page < MAX_PAGES; page++) {
-      const { positions: more, count } = await pageAt(positions.length);
-      positions.push(...more);
-      if (more.length === 0 || typeof count !== "number" || positions.length >= count) break;
+    let count: number | undefined;
+    let page = 0;
+    for (; page < MAX_PAGES; page++) {
+      const next = await pageAt(positions.length);
+      positions.push(...next.positions);
+      count = next.count;
+      if (next.positions.length === 0 || typeof count !== "number" || positions.length >= count) break;
     }
+    const stoppedAtBound = page === MAX_PAGES;
 
     const seen = new Set<string>();
     const jobs: NormalizedJob[] = [];
@@ -92,7 +101,7 @@ export const eightfold: SourceAdapter = {
         publishedAt: typeof position.postedTs === "number" ? new Date(position.postedTs * 1000).toISOString() : null,
       });
     }
-    return { jobs };
+    return stoppedAtBound && typeof count === "number" && count > jobs.length ? { jobs, capped: { total: count } } : { jobs };
   },
 };
 
@@ -109,10 +118,22 @@ async function getPatiently<T>(request: () => Promise<T>): Promise<T> {
   return request();
 }
 
-function keyOf(host: string, domain: string | null): string | null {
+const LOCATION = "?location=";
+
+function keyOf(host: string, domain: string | null, location: string | null): string | null {
   const h = host.toLowerCase();
   const d = domain?.trim().toLowerCase();
-  return d && HOST.test(h) && HOST.test(d) ? `${h}/${d}` : null;
+  if (!d || !HOST.test(h) || !HOST.test(d)) return null;
+  const l = location?.trim();
+  return l ? `${h}/${d}${LOCATION}${l}` : `${h}/${d}`;
+}
+
+/** "jobs.nvidia.com/nvidia.com?location=Switzerland" → its host, domain and location ("" for none). */
+function partsOf(key: string): { host?: string; domain?: string; location: string } {
+  const at = key.indexOf(LOCATION);
+  const site = at < 0 ? key : key.slice(0, at);
+  const [host, domain] = site.split("/");
+  return { host, domain, location: at < 0 ? "" : key.slice(at + LOCATION.length) };
 }
 
 /** The locations as published ("Remote - Switzerland"), else their standardized form. */

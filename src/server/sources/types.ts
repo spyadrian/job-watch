@@ -22,6 +22,12 @@ export interface SourceRead {
   jobs: NormalizedJob[];
   /** The Company's name when the Source states it (used to suggest a name at discovery). */
   companyName?: string;
+  /**
+   * Set when the adapter stopped at its bound (e.g. 1000 Jobs) while the Source reports
+   * more: `total` is how many Jobs the Source says it has. `jobs` is still a complete
+   * read up to the bound, never a failed one.
+   */
+  capped?: { total: number };
 }
 
 export interface SourceContext {
