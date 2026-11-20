@@ -1,0 +1,49 @@
+{
+  "status": 200,
+  "error": {
+    "message": "",
+    "body": ""
+  },
+  "data": {
+    "positions": [
+      {
+        "id": 1970393557075208,
+        "displayJobId": "200067852",
+        "name": "Data Center Technician",
+        "locations": [
+          "India, Maharashtra, Mumbai"
+        ],
+        "standardizedLocations": [
+          "Mumbai, MH, IN"
+        ],
+        "postedTs": 1795179876,
+        "department": "Data Center Technicians",
+        "creationTs": 1794962281,
+        "workLocationOption": "onsite",
+        "atsJobId": "200067852",
+        "positionUrl": "/careers/job/1970393557075208"
+      },
+      {
+        "id": 1970393557073398,
+        "displayJobId": "200067357",
+        "name": "Metro Constuction Lead",
+        "locations": [
+          "United States, Virginia, Boydton"
+        ],
+        "standardizedLocations": [
+          "Boydton, VA, US"
+        ],
+        "postedTs": 1795179435,
+        "department": "Construction Project Management",
+        "creationTs": 1794595481,
+        "workLocationOption": "onsite",
+        "atsJobId": "200067357",
+        "positionUrl": "/careers/job/1970393557073398"
+      }
+    ],
+    "count": 2,
+    "sortBy": "timestamp",
+    "appliedFilters": {}
+  },
+  "metadata": null
+}

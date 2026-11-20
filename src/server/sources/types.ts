@@ -40,6 +40,13 @@ export interface SourceAdapter {
    */
   matchLink(url: URL): string | null;
   /**
+   * For careers sites on the employer's own domain, which matchLink can't recognise:
+   * looks at a page discovery fetched (its URL and HTML) and returns the Source key
+   * when the page is one of this Source type's sites, else null. Only recognises the
+   * site; Jobs are still read from the API, and that read is what confirms it.
+   */
+  matchPage?(pageUrl: URL, html: string): string | null;
+  /**
    * True when the ATS answers a key it doesn't know with a valid, empty board
    * (instead of an error), so an empty read doesn't prove the Company is there.
    */
@@ -50,8 +57,11 @@ export interface SourceAdapter {
 
 /** A Source couldn't be read; `message` is shown to the person as-is. */
 export class SourceError extends Error {
-  constructor(message: string) {
+  /** The HTTP status the Source answered with, when that is why it failed. */
+  readonly status?: number;
+  constructor(message: string, status?: number) {
     super(message);
+    if (status !== undefined) this.status = status;
     this.name = "SourceError";
   }
 }

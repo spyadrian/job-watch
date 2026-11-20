@@ -5,7 +5,7 @@ import { companyFollowing } from "./companies.ts";
 import type { Database } from "./db.ts";
 import { RequestError } from "./errors.ts";
 import { feedKey, feedSourceFromPage } from "./sources/feed.ts";
-import { getText } from "./sources/http.ts";
+import { getPage } from "./sources/http.ts";
 import { adapters, adapterFor, SourceError, type SourceContext } from "./sources/index.ts";
 
 /** The input can't be used, or no Source it designates could be read. */
@@ -78,7 +78,8 @@ async function discoverByLink(url: URL, deps: DiscoveryDeps): Promise<DiscoverRe
     const feedRef = feedSourceFromPage(url, page.body);
     if (feedRef) return readCandidates([feedRef], deps);
   }
-  const inPage = "body" in page ? sourcesInPage(url, page.body) : [];
+  // Read against where the page finally came from: a site may redirect to another host.
+  const inPage = "body" in page ? sourcesInPage(page.url, page.body) : [];
   const boards = inPage.filter((ref) => ref.type !== "feed");
   if (boards.length > 0) return readCandidates(boards, deps);
 
@@ -101,6 +102,12 @@ async function readCandidates(refs: SourceRef[], deps: DiscoveryDeps): Promise<D
 }
 
 /**
+ * Source types whose key a name can't give without guessing a host: a feed's URL, and
+ * the host of an Eightfold careers site (often on the employer's own domain).
+ */
+const NOT_BY_NAME: ReadonlySet<string> = new Set(["feed", "eightfold"]);
+
+/**
  * Tries a Company name's candidate slugs on every ATS in parallel. A board that
  * can't be read simply isn't a candidate; neither is an empty board on an ATS that
  * answers unknown keys with an empty board, since that proves nothing.
@@ -108,7 +115,7 @@ async function readCandidates(refs: SourceRef[], deps: DiscoveryDeps): Promise<D
 async function discoverByName(name: string, deps: DiscoveryDeps): Promise<Candidate[]> {
   const slugs = slugsForName(name);
   const tries = adapters
-    .filter((adapter) => adapter.type !== "feed")
+    .filter((adapter) => !NOT_BY_NAME.has(adapter.type))
     .flatMap((adapter) => slugs.map((slug) => ({ adapter, ref: { type: adapter.type, key: slug } })));
   const results = await Promise.allSettled(
     tries.map(async ({ adapter, ref }) => {
@@ -149,7 +156,8 @@ const MAX_PAGE_SOURCES = 10;
 
 /**
  * The Sources an HTML page points to: embedded ATS boards (any link, iframe or
- * script URL matching an adapter's link patterns). Jobs are never read from the HTML itself.
+ * script URL matching an adapter's link patterns), or the page's own site when an
+ * adapter recognises it (matchPage). Jobs are never read from the HTML itself.
  */
 export function sourcesInPage(pageUrl: URL, html: string): SourceRef[] {
   // URLs may sit in attributes (&amp;-escaped) or in inline JSON (\/-escaped).
@@ -163,6 +171,11 @@ export function sourcesInPage(pageUrl: URL, html: string): SourceRef[] {
       continue;
     }
     for (const ref of sourcesFromLink(url)) found.set(`${ref.type}:${ref.key}`, ref);
+  }
+  // A careers site on the employer's own domain, recognised from the page itself.
+  for (const adapter of adapters) {
+    const key = adapter.matchPage?.(pageUrl, html) ?? null;
+    if (key !== null) found.set(`${adapter.type}:${key}`, { type: adapter.type, key });
   }
   for (const href of alternateFeedLinks(html)) {
     try {
@@ -203,9 +216,10 @@ function decodeEntities(value: string): string {
 }
 
 /** The body behind a link, or why it can't be fetched (then it yields no Source). */
-async function fetchPage(url: URL, deps: DiscoveryDeps): Promise<{ body: string } | { unreachable: string }> {
+async function fetchPage(url: URL, deps: DiscoveryDeps): Promise<{ url: URL; body: string } | { unreachable: string }> {
   try {
-    return { body: await getText(deps, url.href, `the page ${url.href}`) };
+    const page = await getPage(deps, url.href, `the page ${url.href}`);
+    return { url: new URL(page.url), body: page.text };
   } catch (err) {
     if (err instanceof SourceError) return { unreachable: err.message };
     throw err;
@@ -219,10 +233,18 @@ async function candidateFor(source: SourceRef, deps: DiscoveryDeps): Promise<Can
   return {
     source,
     sourceLabel: adapter.label,
-    suggestedName: read.companyName?.trim() || (source.type === "feed" ? nameFromHost(source.key) : nameFromKey(source.key)),
+    suggestedName: read.companyName?.trim() || fallbackName(source),
     jobCount: read.jobs.length,
     alreadyFollowing: followed?.name ?? null,
   };
+}
+
+/** A name for a Source that doesn't state one: from the site for a feed URL or a host key, else the slug. */
+function fallbackName(source: SourceRef): string {
+  if (source.type === "feed") return nameFromHost(source.key);
+  // "jobs.nvidia.com/nvidia.com": named after the tenant's domain.
+  if (source.type === "eightfold") return nameFromHost(`https://${source.key.split("/")[1] ?? source.key}`);
+  return nameFromKey(source.key);
 }
 
 /** A host name a person could type: labels, then a real-looking top-level domain. */

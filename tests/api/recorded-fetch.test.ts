@@ -27,6 +27,17 @@ describe("recorded fetch", () => {
     expect(res.status).toBe(503);
   });
 
+  it("follows a recorded redirect, answering with the final URL", async () => {
+    const redirecting = createRecordedFetch({
+      "https://old.example.com/": { status: 301, location: "https://new.example.com/careers" },
+      "https://new.example.com/careers": { body: "<html></html>", contentType: "text/html" },
+    });
+    const res = await redirecting("https://old.example.com/");
+    expect(res.status).toBe(200);
+    expect(res.url).toBe("https://new.example.com/careers");
+    expect(await res.text()).toBe("<html></html>");
+  });
+
   it("fails like a network error for URLs that were not recorded", async () => {
     await expect(fetch("https://unknown.example.com/")).rejects.toThrow(TypeError);
   });

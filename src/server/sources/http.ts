@@ -8,6 +8,11 @@ export const SOURCE_TIMEOUT_MS = 15_000;
  * Network errors, timeouts and non-2xx answers become a SourceError.
  */
 export async function getText(ctx: SourceContext, url: string, what: string): Promise<string> {
+  return (await getPage(ctx, url, what)).text;
+}
+
+/** Like getText, also telling the URL the body finally came from (after redirects). */
+export async function getPage(ctx: SourceContext, url: string, what: string): Promise<{ url: string; text: string }> {
   let res: Response;
   try {
     res = await ctx.fetch(url, { signal: AbortSignal.timeout(ctx.sourceTimeoutMs ?? SOURCE_TIMEOUT_MS), redirect: "follow" });
@@ -15,9 +20,9 @@ export async function getText(ctx: SourceContext, url: string, what: string): Pr
     const timedOut = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
     throw new SourceError(timedOut ? `${what} didn't answer in time` : `Couldn't reach ${what}`);
   }
-  if (res.status === 404) throw new SourceError(`${capitalize(what)} doesn't exist (HTTP 404)`);
-  if (!res.ok) throw new SourceError(`${capitalize(what)} answered with an error (HTTP ${res.status})`);
-  return res.text();
+  if (res.status === 404) throw new SourceError(`${capitalize(what)} doesn't exist (HTTP 404)`, 404);
+  if (!res.ok) throw new SourceError(`${capitalize(what)} answered with an error (HTTP ${res.status})`, res.status);
+  return { url: res.url || url, text: await res.text() };
 }
 
 function capitalize(text: string): string {
