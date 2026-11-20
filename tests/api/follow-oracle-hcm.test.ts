@@ -152,6 +152,45 @@ describe("discovering an Oracle Cloud HCM site from a link", () => {
     expect(body.candidates[0].suggestedName).toBe("BigCo Careers");
   });
 
+  it("reads the pages after the first a few at a time, not one after another", async () => {
+    const sources: RecordedSources = { ...bigSite };
+    for (let n = 0; n < 10; n++) sources[page(BIG, "CX_7", n * 200)] = requisitionsPage(n * 200, n === 9 ? 47 : 200, 1847);
+    let inFlight = 0;
+    let mostInFlight = 0;
+    const { request } = createTestApp({
+      sources,
+      wrapFetch: (recorded) => async (input, init) => {
+        mostInFlight = Math.max(mostInFlight, ++inFlight);
+        try {
+          await new Promise((resolve) => setTimeout(resolve, 5));
+          return await recorded(input, init);
+        } finally {
+          inFlight--;
+        }
+      },
+    });
+
+    const res = await request("POST", "/api/companies/discover", { input: `https://${BIG}/hcmUI/CandidateExperience/en/sites/CX_7/requisitions` });
+
+    expect((await res.json()).candidates[0].jobCount).toBe(1847);
+    expect(mostInFlight).toBeGreaterThan(1);
+    expect(mostInFlight).toBeLessThanOrEqual(4);
+  });
+
+  it("keeps the API's order and counts a Job repeated on the next page once", async () => {
+    const first = requisitionsPage(0, 200, 400);
+    const second = requisitionsPage(200, 200, 400);
+    // A posting-date tie moved the last Job of page 1 onto page 2 as well.
+    second.body.items[0]!.requisitionList[0] = { ...first.body.items[0]!.requisitionList[199]! };
+    const { request } = createTestApp({ sources: { ...bigSite, [page(BIG, "CX_7", 0)]: first, [page(BIG, "CX_7", 200)]: second } });
+
+    const res = await request("POST", "/api/companies", { source: { type: "oracle-hcm", key: `${BIG}/CX_7` }, name: "BigCo" });
+
+    expect(res.status).toBe(201);
+    const { jobs } = await (await request("GET", "/api/jobs")).json();
+    expect(jobs).toHaveLength(399);
+  });
+
   it("follows the API's own page size when it answers fewer Jobs than asked", async () => {
     const short = (offset: number, count: number) => requisitionsPage(offset, count, 60);
     const { body } = await discover(
@@ -189,6 +228,22 @@ describe("discovering an Oracle Cloud HCM site from a link", () => {
 
     expect(res.status).toBe(502);
     expect(body.error).toBe(`The Oracle Cloud HCM site "${BIG}/CX_7" answered with an error (HTTP 503)`);
+  });
+
+  it("fails as a whole when a middle page fails, even if the pages after it are read", async () => {
+    const { res, body } = await discover(
+      {
+        ...bigSite,
+        [page(BIG, "CX_7", 0)]: requisitionsPage(0, 200, 700),
+        [page(BIG, "CX_7", 200)]: requisitionsPage(200, 200, 700),
+        [page(BIG, "CX_7", 400)]: { status: 500, body: "oops" },
+        [page(BIG, "CX_7", 600)]: requisitionsPage(600, 100, 700),
+      },
+      `https://${BIG}/hcmUI/CandidateExperience/en/sites/CX_7/requisitions`,
+    );
+
+    expect(res.status).toBe(502);
+    expect(body.error).toBe(`The Oracle Cloud HCM site "${BIG}/CX_7" answered with an error (HTTP 500)`);
   });
 
   // empty-requisitions.json is the API's real answer to a search that matches no Job.

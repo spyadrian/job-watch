@@ -70,3 +70,27 @@ export function isoDate(value: unknown): string | null {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
+
+/**
+ * Runs `task` on every item with at most `limit` running at once and gives the results in
+ * the items' order. The first failure rejects the whole run and stops starting new tasks,
+ * so a paged read never yields a partial list.
+ */
+export async function mapConcurrently<T, R>(items: readonly T[], limit: number, task: (item: T) => Promise<R>): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  let failed = false;
+  async function worker(): Promise<void> {
+    while (!failed && next < items.length) {
+      const index = next++;
+      try {
+        results[index] = await task(items[index]!);
+      } catch (err) {
+        failed = true;
+        throw err;
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
