@@ -38,7 +38,6 @@ interface Posting {
 export const workday: SourceAdapter = {
   type: "workday",
   label: "Workday",
-  triedByName: false,
 
   matchLink(url) {
     const host = HOST.exec(url.hostname.toLowerCase());
