@@ -55,12 +55,16 @@ The list of Unseen Jobs that pass the Filter; the main page.
 _Avoid_: Feed, home, dashboard
 
 **Filter**:
-The person's standing choice of City filters and keywords that decides which Jobs reach the Inbox and in what order.
+The person's standing choice of City filters, whether to include remote Jobs ("Include remote Jobs"), and keywords that decides which Jobs reach the Inbox and in what order.
 _Avoid_: Search (search is the separate, temporary full-text query)
 
 **City filter**:
 One city the person wants, given as one or more spellings of that city (e.g. Geneva / Genève / Genf). A spelling matches a location as whole words, ignoring accents and case: "Ge" matches "Carouge, GE" but not "Germany".
 _Avoid_: Location filter
+
+**Remote location**:
+A Job location that contains "remote" as a whole word, ignoring case (e.g. "Remote - Europe", "Berlin or remote"). With "Include remote Jobs" on, a Job with a remote location passes the City filters whatever its other locations.
+_Avoid_: Home office, telework
 
 **Required keyword**:
 A word of which at least one must appear in a Job's title for the Job to pass the Filter (shown green).
