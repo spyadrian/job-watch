@@ -1,0 +1,25 @@
+{
+  "items": [
+    {
+      "SearchId": 1,
+      "Keyword": null,
+      "Offset": 0,
+      "Limit": 200,
+      "SortBy": "POSTING_DATES_DESC",
+      "TotalJobsCount": 0,
+      "SiteNumber": "CX_7",
+      "requisitionList": [],
+      "categoriesFacet": [],
+      "locationsFacet": [],
+      "postingDatesFacet": [],
+      "titlesFacet": [],
+      "workLocationsFacet": [],
+      "organizationsFacet": [],
+      "workplaceTypesFacet": []
+    }
+  ],
+  "count": 1,
+  "hasMore": false,
+  "limit": 200,
+  "offset": 0
+}

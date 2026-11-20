@@ -7,19 +7,23 @@
 //
 // The site is looked up first: an instance answers an unknown site number with its default
 // site's Jobs, so only the site record proves the key is right (and it states the site's name).
-// Requisitions come in pages of at most 200 (larger limits are capped); pages advance by
-// what the API actually returned, up to TotalJobsCount, and never more than 25 pages.
+// Requisitions come in pages of at most 200 (larger limits are capped). The first page gives
+// TotalJobsCount and the page size actually served; the remaining pages, up to the total and
+// never more than 25 pages in all, are then read in parallel (4 at a time) and kept in page order.
+// A site with no open Job is a valid, empty read (see readPage).
 //
 // Links on a Company's own domain (careers.oracle.com) or using the site's URL name
 // (`/sites/jobsearch`) aren't matched here: their page states `siteNumber=CX_…` in the
 // URLs it loads, which discovery finds through sourcesInPage.
-import { getJson, isoDate } from "./http.ts";
+import { getJson, isoDate, mapConcurrently } from "./http.ts";
 import { SourceError, type NormalizedJob, type SourceAdapter } from "./types.ts";
 
 const HOST = /^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.oraclecloud\.(?:com|eu)$/;
 const SITE_NUMBER = /^CX_\d+$/i;
 const PAGE_SIZE = 200;
 const MAX_PAGES = 25;
+/** Pages read at once after the first; Oracle's own site (~15 pages) showed no throttling at 8. */
+const PAGE_CONCURRENCY = 4;
 
 interface Site {
   SiteNumber?: string;
@@ -28,7 +32,7 @@ interface Site {
 }
 
 interface RequisitionsPage {
-  items?: { TotalJobsCount?: number; requisitionList?: Requisition[] }[];
+  items?: { TotalJobsCount?: unknown; requisitionList?: unknown }[];
 }
 
 interface Requisition {
@@ -77,25 +81,30 @@ export const oracleHcm: SourceAdapter = {
     const site = sites.items.find((s) => s?.SiteNumber?.toUpperCase() === siteNumber);
     if (!site) throw new SourceError(`The Oracle Cloud HCM site "${key}" doesn't exist`);
 
+    const pageAt = async (offset: number) =>
+      readPage(
+        (await getJson(
+          ctx,
+          `${api}/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations` +
+            `&finder=findReqs;siteNumber=${siteNumber},limit=${PAGE_SIZE},offset=${offset},sortBy=POSTING_DATES_DESC`,
+          what,
+        )) as RequisitionsPage | null,
+        unexpected,
+      );
+    // The first page tells the total and the page size the API actually serves (it may cap
+    // `limit`); the remaining pages are then read a few at a time.
+    const first = await pageAt(0);
+    const stride = first.list.length;
+    const offsets: number[] = [];
+    for (let offset = stride; stride > 0 && offset < first.total && offsets.length < MAX_PAGES - 1; offset += stride) {
+      offsets.push(offset);
+    }
+    const rest = await mapConcurrently(offsets, PAGE_CONCURRENCY, pageAt);
+
     const byId = new Map<string, Requisition>();
-    let offset = 0;
-    for (let pageIndex = 0; pageIndex < MAX_PAGES; pageIndex++) {
-      const body = (await getJson(
-        ctx,
-        `${api}/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations` +
-          `&finder=findReqs;siteNumber=${siteNumber},limit=${PAGE_SIZE},offset=${offset},sortBy=POSTING_DATES_DESC`,
-        what,
-      )) as RequisitionsPage | null;
-      const search = body?.items?.[0];
-      const list = search?.requisitionList;
-      if (!Array.isArray(list) || typeof search?.TotalJobsCount !== "number") throw new SourceError(unexpected);
-      for (const requisition of list) {
-        if (requisition?.Id === undefined || requisition.Id === null || !requisition.Title) throw new SourceError(unexpected);
-        // Pages are sorted by posting date; a tie may repeat a Job across pages.
-        byId.set(String(requisition.Id), requisition);
-      }
-      offset += list.length;
-      if (list.length === 0 || offset >= search.TotalJobsCount) break;
+    for (const { list } of [first, ...rest]) {
+      // Pages are sorted by posting date; a tie may repeat a Job across pages.
+      for (const requisition of list) byId.set(String(requisition.Id), requisition);
     }
 
     const jobs: NormalizedJob[] = [...byId].map(([id, requisition]) => ({
@@ -111,3 +120,22 @@ export const oracleHcm: SourceAdapter = {
     return companyName ? { jobs, companyName } : { jobs };
   },
 };
+
+/**
+ * The requisitions of one page and the site's total. A site with no open Job answers a
+ * search result with `TotalJobsCount: 0` and an empty `requisitionList`; an empty `items`
+ * or a missing `requisitionList` also reads as no Jobs. Anything else malformed throws.
+ */
+function readPage(body: RequisitionsPage | null, unexpected: string): { list: Requisition[]; total: number } {
+  if (!Array.isArray(body?.items)) throw new SourceError(unexpected);
+  const search = body.items[0];
+  if (search === undefined) return { list: [], total: 0 };
+  if (typeof search !== "object" || search === null) throw new SourceError(unexpected);
+  const list = search.requisitionList ?? [];
+  const total = search.TotalJobsCount ?? (Array.isArray(list) && list.length === 0 ? 0 : undefined);
+  if (!Array.isArray(list) || typeof total !== "number") throw new SourceError(unexpected);
+  for (const requisition of list as Requisition[]) {
+    if (requisition?.Id === undefined || requisition.Id === null || !requisition.Title) throw new SourceError(unexpected);
+  }
+  return { list: list as Requisition[], total };
+}
