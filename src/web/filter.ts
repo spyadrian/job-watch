@@ -7,7 +7,7 @@ import { byPosition, findRanges, fold } from "./text-match.ts";
 export function passesFilter(job: Job, filter: Filter): boolean {
   const title = fold(job.title);
   return (
-    passesCities(job, filter.cities) &&
+    passesCities(job, filter) &&
     (words(filter.required).length === 0 || containsAny(title, filter.required)) &&
     !containsAny(title, filter.excluded)
   );
@@ -39,9 +39,34 @@ function containsAny(foldedText: string, keywords: string[]): boolean {
 /** A location that says the Job can be done remotely, e.g. "Remote - Europe". */
 const remote = /\bremote\b/;
 
-function passesCities(job: Job, cities: string[][]): boolean {
-  if (cities.length === 0) return true;
+function passesCities(job: Job, filter: Filter): boolean {
+  if (filter.cities.length === 0) return true;
   const locations = job.locations.map(fold);
-  if (locations.length === 0 || locations.some((location) => remote.test(location))) return true;
-  return cities.some((spellings) => locations.some((location) => containsAny(location, spellings)));
+  if (locations.length === 0) return true;
+  if (filter.includeRemote && locations.some((location) => remote.test(location))) return true;
+  return filter.cities.some((spellings) =>
+    locations.some((location) => words(spellings).some((spelling) => containsWholeWords(location, spelling))),
+  );
+}
+
+/** A letter or digit, accented or not: what a word is made of. */
+const wordChar = /[\p{L}\p{N}]/u;
+
+/**
+ * Whether `spelling` occurs in `location` (both folded) starting and ending on a word
+ * boundary: "ge" is in "carouge, ge" but not in "germany". Unicode-aware, unlike `\b`.
+ */
+function containsWholeWords(location: string, spelling: string): boolean {
+  for (let at = location.indexOf(spelling); at !== -1; at = location.indexOf(spelling, at + 1)) {
+    const before = location.slice(0, at);
+    const after = location.slice(at + spelling.length);
+    const startsWord = !wordChar.test([...spelling][0] ?? "") || !wordChar.test(lastChar(before));
+    const endsWord = !wordChar.test(lastChar(spelling)) || !wordChar.test(after[0] ?? "");
+    if (startsWord && endsWord) return true;
+  }
+  return false;
+}
+
+function lastChar(s: string): string {
+  return [...s].at(-1) ?? "";
 }

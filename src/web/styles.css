@@ -734,6 +734,21 @@ mark.hl-search.hl-boosted {
   font-size: 0.8rem;
 }
 
+.word-group-extra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+
+.include-remote {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;
