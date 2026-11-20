@@ -9,6 +9,7 @@
 // site's Jobs, so only the site record proves the key is right (and it states the site's name).
 // Requisitions come in pages of at most 200 (larger limits are capped); pages advance by
 // what the API actually returned, up to TotalJobsCount, and never more than 25 pages.
+// A site with no open Job is a valid, empty read (see readPage).
 //
 // Links on a Company's own domain (careers.oracle.com) or using the site's URL name
 // (`/sites/jobsearch`) aren't matched here: their page states `siteNumber=CX_…` in the
@@ -28,7 +29,7 @@ interface Site {
 }
 
 interface RequisitionsPage {
-  items?: { TotalJobsCount?: number; requisitionList?: Requisition[] }[];
+  items?: { TotalJobsCount?: unknown; requisitionList?: unknown }[];
 }
 
 interface Requisition {
@@ -86,16 +87,13 @@ export const oracleHcm: SourceAdapter = {
           `&finder=findReqs;siteNumber=${siteNumber},limit=${PAGE_SIZE},offset=${offset},sortBy=POSTING_DATES_DESC`,
         what,
       )) as RequisitionsPage | null;
-      const search = body?.items?.[0];
-      const list = search?.requisitionList;
-      if (!Array.isArray(list) || typeof search?.TotalJobsCount !== "number") throw new SourceError(unexpected);
+      const { list, total } = readPage(body, unexpected);
       for (const requisition of list) {
-        if (requisition?.Id === undefined || requisition.Id === null || !requisition.Title) throw new SourceError(unexpected);
         // Pages are sorted by posting date; a tie may repeat a Job across pages.
         byId.set(String(requisition.Id), requisition);
       }
       offset += list.length;
-      if (list.length === 0 || offset >= search.TotalJobsCount) break;
+      if (list.length === 0 || offset >= total) break;
     }
 
     const jobs: NormalizedJob[] = [...byId].map(([id, requisition]) => ({
@@ -111,3 +109,22 @@ export const oracleHcm: SourceAdapter = {
     return companyName ? { jobs, companyName } : { jobs };
   },
 };
+
+/**
+ * The requisitions of one page and the site's total. A site with no open Job answers a
+ * search result with `TotalJobsCount: 0` and an empty `requisitionList`; an empty `items`
+ * or a missing `requisitionList` also reads as no Jobs. Anything else malformed throws.
+ */
+function readPage(body: RequisitionsPage | null, unexpected: string): { list: Requisition[]; total: number } {
+  if (!Array.isArray(body?.items)) throw new SourceError(unexpected);
+  const search = body.items[0];
+  if (search === undefined) return { list: [], total: 0 };
+  if (typeof search !== "object" || search === null) throw new SourceError(unexpected);
+  const list = search.requisitionList ?? [];
+  const total = search.TotalJobsCount ?? (Array.isArray(list) && list.length === 0 ? 0 : undefined);
+  if (!Array.isArray(list) || typeof total !== "number") throw new SourceError(unexpected);
+  for (const requisition of list as Requisition[]) {
+    if (requisition?.Id === undefined || requisition.Id === null || !requisition.Title) throw new SourceError(unexpected);
+  }
+  return { list: list as Requisition[], total };
+}

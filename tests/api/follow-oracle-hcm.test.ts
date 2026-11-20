@@ -191,14 +191,44 @@ describe("discovering an Oracle Cloud HCM site from a link", () => {
     expect(body.error).toBe(`The Oracle Cloud HCM site "${BIG}/CX_7" answered with an error (HTTP 503)`);
   });
 
-  it("refuses an answer in an unexpected format rather than reporting zero jobs", async () => {
+  // empty-requisitions.json is the API's real answer to a search that matches no Job.
+  it.each([
+    ["no requisitions (as recorded)", json("empty-requisitions")],
+    ["no search result at all", { body: { items: [], count: 0, hasMore: false } }],
+    ["a search result without a requisition list", { body: { items: [{ TotalJobsCount: 0, SiteNumber: "CX_7" }], count: 1 } }],
+  ])("reads a site with %s as 0 Jobs, still giving the site's name", async (_, answer) => {
     const { res, body } = await discover(
-      { ...bigSite, [page(BIG, "CX_7", 0)]: { body: { items: [] } } },
+      { ...bigSite, [page(BIG, "CX_7", 0)]: answer },
+      `https://${BIG}/hcmUI/CandidateExperience/en/sites/CX_7/requisitions`,
+    );
+
+    expect(res.status).toBe(200);
+    expect(body.candidates).toEqual([
+      {
+        source: { type: "oracle-hcm", key: `${BIG}/CX_7` },
+        sourceLabel: "Oracle Cloud HCM",
+        suggestedName: "BigCo Careers",
+        jobCount: 0,
+        alreadyFollowing: null,
+      },
+    ]);
+  });
+
+  it.each([
+    ["not JSON", { body: "<html>maintenance</html>" }],
+    ["no items", { body: { count: 0 } }],
+    ["items that aren't a list", { body: { items: {} } }],
+    ["a requisition list that isn't a list", { body: { items: [{ TotalJobsCount: 1, requisitionList: "none" }] } }],
+    ["Jobs without a total count", { body: { items: [{ requisitionList: requisitionsPage(0, 1, 1).body.items[0]!.requisitionList }] } }],
+    ["a total count that isn't a number", { body: { items: [{ TotalJobsCount: "0", requisitionList: [] }] } }],
+  ])("refuses an answer with %s rather than reporting zero jobs", async (_, answer) => {
+    const { res, body } = await discover(
+      { ...bigSite, [page(BIG, "CX_7", 0)]: answer },
       `https://${BIG}/hcmUI/CandidateExperience/en/sites/CX_7/requisitions`,
     );
 
     expect(res.status).toBe(502);
-    expect(body.error).toMatch(/unexpected format/);
+    expect(body.error).toMatch(/unexpected format|valid JSON/);
   });
 
   it("reports a site number the instance doesn't have, instead of reading its default site", async () => {
@@ -254,5 +284,15 @@ describe("following an Oracle Cloud HCM site", () => {
         publishedAt: "2026-11-04T00:00:00.000Z",
       },
     ]);
+  });
+
+  it("marks its Jobs Outdated when the site no longer has any open Job", async () => {
+    const { request, sources } = createTestApp({ sources: recorded });
+    await request("POST", "/api/companies", { source: { type: "oracle-hcm", key: `${ELCA}/CX_1` }, name: "ELCA" });
+
+    sources[page(ELCA, "CX_1", 0)] = json("empty-requisitions");
+    const refresh = await (await request("POST", "/api/refresh")).text();
+
+    expect(refresh).toContain(`"summary":{"new":0,"outdated":3,"failed":0}`);
   });
 });
