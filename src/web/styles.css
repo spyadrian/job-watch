@@ -94,8 +94,9 @@ body {
   font-weight: 600;
 }
 
-/* App shell: header and tabs on top, the panel scrolls, the toast strip below it
-   (so the toast never covers the list). */
+/* App shell: header and tabs on top, the panel scrolls below them. The toast floats
+   over the panel's bottom edge (see .toast-region), so showing it never changes the
+   layout; .panel-inner keeps enough bottom padding to scroll the last row above it. */
 #root {
   display: flex;
   flex-direction: column;
@@ -120,7 +121,8 @@ body {
 .panel-inner {
   max-width: 960px;
   margin: 0 auto;
-  padding: 24px 16px;
+  /* Room below the list for the floating toast (its height + its 16px offset + a gap). */
+  padding: 24px 16px 88px;
 }
 
 .empty {
@@ -532,18 +534,26 @@ body {
   }
 }
 
+/* Floats over the content: the region lets clicks through, only the toast takes them. */
 .toast-region {
-  flex: none;
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 10;
   display: flex;
   justify-content: flex-end;
-  padding: 0 16px;
+  pointer-events: none;
 }
 
-.toast-region:not(:empty) {
-  padding-block: 8px 12px;
+@media (max-width: 560px) {
+  .toast-region {
+    left: 16px;
+    justify-content: center;
+  }
 }
 
 .toast {
+  pointer-events: auto;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -732,6 +742,21 @@ mark.hl-search.hl-boosted {
 .word-group .hint {
   margin: 0;
   font-size: 0.8rem;
+}
+
+.word-group-extra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+
+.include-remote {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
 }
 
 .chips {

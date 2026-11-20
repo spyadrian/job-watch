@@ -1,6 +1,6 @@
 // The Filter editor: a collapsible panel at the top of the Inbox. Every change is
 // saved through the API straight away; the job-list module applies it.
-import { useCallback, useEffect, useId, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
 import type { Filter } from "../shared/types.ts";
 import { call } from "./api.ts";
 import { emptyFilter } from "./job-list.ts";
@@ -62,6 +62,7 @@ export function FilterPanel({ state }: { state: FilterState }) {
     }
   });
   const bodyId = useId();
+  const remoteHintId = useId();
 
   function toggle() {
     setOpen(!open);
@@ -93,7 +94,7 @@ export function FilterPanel({ state }: { state: FilterState }) {
         <WordGroup
           kind="city"
           label="City filters"
-          hint="Jobs with no location or a remote one always show. Separate spellings with /, e.g. Geneva / Genève / Genf."
+          hint="Jobs with no location always show. Separate spellings with /, e.g. Geneva / Genève / Genf."
           items={filter.cities.map((spellings) => spellings.join(" / "))}
           onAdd={(text) => {
             const spellings = text
@@ -103,7 +104,22 @@ export function FilterPanel({ state }: { state: FilterState }) {
             if (spellings.length > 0) save({ ...filter, cities: [...filter.cities, spellings] });
           }}
           onRemove={(i) => save({ ...filter, cities: filter.cities.filter((_, j) => j !== i) })}
-        />
+        >
+          <label className="include-remote">
+            <input
+              type="checkbox"
+              checked={filter.includeRemote}
+              onChange={(e) => save({ ...filter, includeRemote: e.target.checked })}
+              aria-describedby={remoteHintId}
+            />
+            Include remote Jobs
+          </label>
+          <span id={remoteHintId} className="hint">
+            {filter.cities.length === 0
+              ? "Applies once you add a City filter; until then every Job shows."
+              : "Remote Jobs show whatever their city."}
+          </span>
+        </WordGroup>
         {keywordGroups.map((g) => (
           <WordGroup
             key={g.key}
@@ -141,6 +157,7 @@ function WordGroup({
   items,
   onAdd,
   onRemove,
+  children,
 }: {
   kind: "city" | ListKey;
   label: string;
@@ -148,6 +165,8 @@ function WordGroup({
   items: string[];
   onAdd: (text: string) => void;
   onRemove: (index: number) => void;
+  /** Extra settings shown under the add field. */
+  children?: ReactNode;
 }) {
   const [text, setText] = useState("");
   const inputId = useId();
@@ -197,6 +216,7 @@ function WordGroup({
         />
         <button type="submit">Add</button>
       </form>
+      {children && <div className="word-group-extra">{children}</div>}
     </div>
   );
 }

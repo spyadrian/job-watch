@@ -12,7 +12,9 @@ describe("the Filter", () => {
     const res = await request("GET", "/api/filter");
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ filter: { cities: [], required: [], boosted: [], excluded: [] } });
+    expect(await res.json()).toEqual({
+      filter: { cities: [], required: [], boosted: [], excluded: [], includeRemote: true },
+    });
   });
 
   it("is replaced and read back", async () => {
@@ -22,6 +24,7 @@ describe("the Filter", () => {
       required: ["engineer"],
       boosted: ["react"],
       excluded: ["intern"],
+      includeRemote: false,
     };
 
     const put = await request("PUT", "/api/filter", filter);
@@ -39,21 +42,24 @@ describe("the Filter", () => {
       required: [" engineer ", ""],
       boosted: [],
       excluded: ["   "],
+      includeRemote: true,
     });
 
     expect(await (await request("GET", "/api/filter")).json()).toEqual({
-      filter: { cities: [["Geneva"]], required: ["engineer"], boosted: [], excluded: [] },
+      filter: { cities: [["Geneva"]], required: ["engineer"], boosted: [], excluded: [], includeRemote: true },
     });
   });
 
   it.each([
     ["not an object", "nope"],
     ["missing lists", { cities: [] }],
-    ["a City filter that is not a list", { cities: ["Geneva"], required: [], boosted: [], excluded: [] }],
-    ["a keyword that is not text", { cities: [], required: [42], boosted: [], excluded: [] }],
+    ["a City filter that is not a list", { cities: ["Geneva"], required: [], boosted: [], excluded: [], includeRemote: true }],
+    ["a keyword that is not text", { cities: [], required: [42], boosted: [], excluded: [], includeRemote: true }],
+    ["a missing Include remote Jobs", { cities: [], required: [], boosted: [], excluded: [] }],
+    ["an Include remote Jobs that is not true or false", { cities: [], required: [], boosted: [], excluded: [], includeRemote: "no" }],
   ])("refuses %s with a message, keeping the saved Filter", async (_, body) => {
     const { request } = createTestApp();
-    await request("PUT", "/api/filter", { cities: [], required: ["engineer"], boosted: [], excluded: [] });
+    await request("PUT", "/api/filter", { cities: [], required: ["engineer"], boosted: [], excluded: [], includeRemote: true });
 
     const res = await request("PUT", "/api/filter", body);
 

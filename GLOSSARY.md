@@ -59,7 +59,7 @@ The person's standing choice of City filters and keywords that decides which Job
 _Avoid_: Search (search is the separate, temporary full-text query)
 
 **City filter**:
-One city the person wants, given as one or more spellings of that city (e.g. Geneva / Genève / Genf).
+One city the person wants, given as one or more spellings of that city (e.g. Geneva / Genève / Genf). A spelling matches a location as whole words, ignoring accents and case: "Ge" matches "Carouge, GE" but not "Germany".
 _Avoid_: Location filter
 
 **Required keyword**:

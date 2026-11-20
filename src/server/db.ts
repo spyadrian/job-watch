@@ -73,6 +73,8 @@ const migrations: string[] = [
      source_key = (SELECT source_key FROM company WHERE company.id = job.company_id)
    WHERE company_id IS NOT NULL;
    CREATE INDEX job_kept_by_source ON job (source_type, source_key, source_job_id) WHERE company_id IS NULL;`,
+  // "Include remote Jobs": on by default, as remote Jobs always passed City filters before.
+  `ALTER TABLE filter ADD COLUMN include_remote INTEGER NOT NULL DEFAULT 1;`,
 ];
 
 /** Test-only: drops every table and replays the migrations, as on a first start. */
