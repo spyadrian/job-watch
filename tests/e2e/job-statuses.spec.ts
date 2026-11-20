@@ -16,16 +16,9 @@ async function expectCounts(page: Page, counts: Record<string, number>) {
   for (const [name, n] of Object.entries(counts)) await expect(tab(page, name)).toHaveAccessibleName(`${name} ${n}`);
 }
 
-function overlaps(a: { x: number; y: number; width: number; height: number }, b: typeof a) {
-  return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
-}
-
 async function expectToastClear(page: Page, t: Locator) {
-  // Never takes focus…
+  // Never takes focus.
   expect(await t.evaluate((el) => el.contains(document.activeElement))).toBe(false);
-  // …and never covers the list.
-  const panel = (await page.getByRole("tabpanel").boundingBox())!;
-  expect(overlaps((await t.boundingBox())!, panel)).toBe(false);
 }
 
 test("moves Jobs between lists with Seen, Save and Applied, with counts and an undo toast", async ({ page }) => {
@@ -65,6 +58,61 @@ test("moves Jobs between lists with Seen, Save and Applied, with counts and an u
   await tab(page, "Seen").click();
   await job.getByRole("button", { name: "Seen" }).click();
   await expectCounts(page, { Inbox: 3, Seen: 0 });
+});
+
+test("the Inbox header counts its Jobs, and an Inbox with every Job triaged is caught up", async ({ page }) => {
+  await followAcme(page);
+  await page.goto("/");
+  const actions = page.locator(".list-actions");
+  await expect(actions).toContainText("3 Jobs");
+  await expect(actions.getByText(/Marks the/)).toHaveCount(0);
+
+  // Narrow screens: the bar fits, no horizontal scroll.
+  await page.setViewportSize({ width: 320, height: 640 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  const bar = (await actions.boundingBox())!;
+  expect(bar.x + bar.width).toBeLessThanOrEqual(320);
+
+  await row(page, "Senior Backend Engineer").getByRole("button", { name: "Seen" }).click();
+  await expect(actions).toContainText("2 Jobs");
+
+  await page.getByRole("button", { name: "Mark all as seen" }).click();
+  await expect(page.getByRole("tabpanel")).toContainText("You're all caught up: nothing new to review.");
+  await expect(page.getByText(/hidden by your Filter/)).toHaveCount(0);
+});
+
+test("the toast floats over the list without changing the layout, and the list stays reachable", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 600 });
+  const res = await page.request.post("/api/companies", {
+    data: { source: { type: "greenhouse", key: "manyroles" }, name: "Many Roles" },
+  });
+  expect(res.status()).toBe(201);
+  await page.goto("/");
+  const jobs = page.getByRole("tabpanel").getByRole("listitem");
+  await expect(jobs).toHaveCount(50);
+
+  const panel = page.locator("main.panel");
+  const before = (await panel.boundingBox())!;
+  await jobs.first().getByRole("button", { name: "Seen" }).click();
+  await expect(toast(page)).toContainText("Marked as seen");
+  // Showing the toast does not shrink the scrolling panel.
+  expect(await panel.boundingBox()).toEqual(before);
+
+  // Scrolled to the bottom, the last row and "Show N more" sit fully above the toast.
+  await panel.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+  const t = (await toast(page).locator(".toast").boundingBox())!;
+  for (const el of [jobs.last(), page.getByRole("button", { name: /Show \d+ more/ })]) {
+    const box = (await el.boundingBox())!;
+    expect(box.y + box.height).toBeLessThanOrEqual(t.y);
+  }
+
+  // Clicks next to the toast reach what is under it.
+  await expect(page.getByRole("status")).toHaveCSS("pointer-events", "none");
+  await expect(toast(page).locator(".toast")).toHaveCSS("pointer-events", "auto");
+
+  // On a narrow screen it sits bottom-centre with 16px side gutters.
+  await page.setViewportSize({ width: 400, height: 600 });
+  expect(await page.getByRole("status").boundingBox()).toMatchObject({ x: 16, width: 400 - 32 });
 });
 
 test("the toast disappears on its own and statuses survive a reload", async ({ page }) => {

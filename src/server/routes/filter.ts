@@ -14,7 +14,7 @@ export function registerFilterRoutes(api: Hono, deps: Pick<AppDeps, "db">): void
     const filter = parseFilter(await jsonBody(c));
     if (!filter) {
       return c.json(
-        { error: "Expected a Filter: { cities: string[][], required: string[], boosted: string[], excluded: string[] }." },
+        { error: "Expected a Filter: { cities: string[][], required: string[], boosted: string[], excluded: string[], includeRemote: boolean }." },
         400,
       );
     }
@@ -24,14 +24,16 @@ export function registerFilterRoutes(api: Hono, deps: Pick<AppDeps, "db">): void
 
 /** A valid Filter with words trimmed and blank ones (and empty City filters) dropped, or null. */
 function parseFilter(body: Record<string, unknown>): Filter | null {
-  const { cities, required, boosted, excluded } = body;
+  const { cities, required, boosted, excluded, includeRemote } = body;
   if (!Array.isArray(cities) || !cities.every(isWordList)) return null;
   if (!isWordList(required) || !isWordList(boosted) || !isWordList(excluded)) return null;
+  if (typeof includeRemote !== "boolean") return null;
   return {
     cities: cities.map(clean).filter((spellings) => spellings.length > 0),
     required: clean(required),
     boosted: clean(boosted),
     excluded: clean(excluded),
+    includeRemote,
   };
 }
 

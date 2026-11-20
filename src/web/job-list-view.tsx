@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { emptyFilter, jobRows, type Filter, type Job, type JobRow, type ListKind } from "./job-list.ts";
+import {
+  emptyListState,
+  jobRows,
+  type EmptyListState,
+  type Filter,
+  type Job,
+  type JobRow,
+  type ListKind,
+  type LoadState,
+} from "./job-list.ts";
+import { plural } from "./plural.ts";
 import { canApply } from "../shared/job-lifecycle.ts";
 import type { JobAction } from "../shared/types.ts";
 import { useGlobalKeys } from "./global-keys.ts";
@@ -16,6 +26,8 @@ export function JobListView({
   filter,
   query,
   empty,
+  loaded,
+  onFollowCompany,
   onAct,
   onMarkAllSeen,
 }: {
@@ -23,7 +35,10 @@ export function JobListView({
   list: ListKind;
   filter: Filter;
   query: string;
-  empty: string;
+  /** What an empty Saved, Applied or Seen list says; the Inbox says why it is empty. */
+  empty?: string;
+  loaded: LoadState;
+  onFollowCompany: () => void;
   onAct: (job: Job, action: JobAction) => void;
   onMarkAllSeen: (jobs: Job[]) => void;
 }) {
@@ -33,12 +48,12 @@ export function JobListView({
   const selection = useSelection(rows, shown, setShown, onAct);
 
   if (rows.length === 0) {
-    const searching = query.trim() !== "" && jobRows(jobs, list, filter, "").length > 0;
-    const filtered = !searching && list === "inbox" && jobRows(jobs, list, emptyFilter, "").length > 0;
     return (
-      <p className="empty">
-        {searching ? `No Jobs match “${query.trim()}”.` : filtered ? "No Jobs pass your Filter." : empty}
-      </p>
+      <EmptyList
+        state={emptyListState(jobs, list, filter, query, loaded)}
+        empty={empty}
+        onFollowCompany={onFollowCompany}
+      />
     );
   }
   const visible = rows.slice(0, shown);
@@ -47,11 +62,9 @@ export function JobListView({
       {list === "inbox" && (
         <div className="list-actions">
           <button type="button" onClick={() => onMarkAllSeen(visible.map((r) => r.job))}>
-            Mark all as seen
+            {rows.length > visible.length ? `Mark ${visible.length} as seen` : "Mark all as seen"}
           </button>
-          <span className="hint">
-            {visible.length === 1 ? "Marks the Job shown" : `Marks the ${visible.length} Jobs shown`}
-          </span>
+          <span className="list-count">{plural(rows.length, "Job")}</span>
         </div>
       )}
       <ul className="job-list" aria-label={`${rows.length} Jobs`}>
@@ -78,6 +91,47 @@ export function JobListView({
       )}
     </>
   );
+}
+
+/** What an empty list says: why it is empty, and for an Inbox without Companies, the way out. */
+function EmptyList({
+  state,
+  empty,
+  onFollowCompany,
+}: {
+  state: EmptyListState;
+  empty?: string;
+  onFollowCompany: () => void;
+}) {
+  switch (state.kind) {
+    case "loading":
+      return null;
+    case "no-match":
+      return <p className="empty">No Jobs match “{state.query}”.</p>;
+    case "list-message":
+      return <p className="empty">{empty}</p>;
+    case "no-company":
+      return (
+        <div className="empty">
+          <p>You don't follow any Company yet.</p>
+          <button type="button" onClick={onFollowCompany}>
+            Follow a Company
+          </button>
+        </div>
+      );
+    case "caught-up":
+      return (
+        <div className="empty">
+          <p>You're all caught up: nothing new to review.</p>
+          {state.hiddenByFilter > 0 && (
+            <p className="empty-detail">
+              {plural(state.hiddenByFilter, "Unseen Job")} {state.hiddenByFilter === 1 ? "is" : "are"} hidden by
+              your Filter.
+            </p>
+          )}
+        </div>
+      );
+  }
 }
 
 /** Controls whose own Enter key must win over "open the selected Job". */

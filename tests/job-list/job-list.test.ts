@@ -95,7 +95,7 @@ describe("the Filter", () => {
       expect(inbox(jobs, { cities: [["Zurich"], ["Lausanne"]] })).toEqual([1, 2]);
     });
 
-    it("always pass Jobs with no location or a remote location", () => {
+    it("pass Jobs with no location, and remote ones by default", () => {
       const jobs = [
         job({ id: 1, locations: [] }),
         job({ id: 2, locations: ["Remote - Europe"] }),
@@ -104,6 +104,53 @@ describe("the Filter", () => {
       ];
 
       expect(inbox(jobs, { cities: [["Geneva"]] })).toEqual([1, 2, 3]);
+    });
+
+    it("match a spelling only as whole words of a location", () => {
+      const jobs = [
+        job({ id: 1, locations: ["Germany, Berlin"] }),
+        job({ id: 2, locations: ["Geneva, GE"] }),
+        job({ id: 3, locations: ["Carouge (GE)"] }),
+        job({ id: 4, locations: ["Genève"] }),
+        job({ id: 5, locations: ["Ge"] }),
+      ];
+
+      expect(inbox(jobs, { cities: [["Ge"]] })).toEqual([2, 3, 5]);
+    });
+
+    it("match a multi-word spelling when its words appear in that order", () => {
+      const jobs = [
+        job({ id: 1, locations: ["New York, NY"] }),
+        job({ id: 2, locations: ["York, New Brunswick"] }),
+        job({ id: 3, locations: ["La Chaux-de-Fonds/NE"] }),
+        job({ id: 4, locations: ["Newark, York"] }),
+      ];
+
+      expect(inbox(jobs, { cities: [["New York"], ["la chaux-de-fonds"]] })).toEqual([1, 3]);
+    });
+
+    it("treat accented letters as part of a word", () => {
+      const jobs = [
+        job({ id: 1, locations: ["Zürich, Switzerland"] }),
+        job({ id: 2, locations: ["Zürichsee"] }),
+        job({ id: 3, locations: ["Sankt Gallen-Zürich"] }),
+      ];
+
+      expect(inbox(jobs, { cities: [["Zurich"]] })).toEqual([1, 3]);
+      expect(inbox([job({ id: 4, locations: ["Bülach"] })], { cities: [["lach"]] })).toEqual([]);
+    });
+
+    it("let remote Jobs through only when Include remote Jobs is on", () => {
+      const jobs = [
+        job({ id: 1, locations: [] }),
+        job({ id: 2, locations: ["Remote - Europe"] }),
+        job({ id: 3, locations: ["Geneva", "Remote"] }),
+        job({ id: 4, locations: ["Berlin"] }),
+      ];
+
+      expect(inbox(jobs, { cities: [["Geneva"]], includeRemote: true })).toEqual([1, 2, 3]);
+      expect(inbox(jobs, { cities: [["Geneva"]], includeRemote: false })).toEqual([1, 3]);
+      expect(inbox(jobs, { cities: [["Remote"]], includeRemote: false })).toEqual([1, 2, 3]);
     });
 
     it("pass every Job when there is no City filter", () => {

@@ -60,15 +60,43 @@ test("edits the Filter in a collapsible panel; it is saved, applied to the Inbox
   await expectTitles(page, ["Senior Backend Engineer"]);
 });
 
+test("unchecking Include remote Jobs removes remote Jobs from the Inbox; it is saved", async ({ page }) => {
+  await followAcme(page);
+  await page.request.put("/api/filter", {
+    data: { cities: [["Bern"]], required: [], boosted: [], excluded: [], includeRemote: true },
+  });
+  await page.goto("/");
+  const panel = page.getByRole("region", { name: "Filter" });
+  await panel.getByRole("button", { name: /^Filter/ }).click();
+  // The remote Product Designer shows; the Office Manager has no location.
+  await expectTitles(page, ["Product Designer", "Office Manager"]);
+
+  const includeRemote = panel.getByRole("checkbox", { name: "Include remote Jobs" });
+  await expect(includeRemote).toBeChecked();
+  await includeRemote.uncheck();
+  await expectTitles(page, ["Office Manager"]);
+
+  // Saved straight away.
+  await page.reload();
+  await expectTitles(page, ["Office Manager"]);
+  await expect(includeRemote).not.toBeChecked();
+
+  await includeRemote.check();
+  await expectTitles(page, ["Product Designer", "Office Manager"]);
+});
+
 test("Mark all as seen marks only the Jobs visible in the Inbox", async ({ page }) => {
   await followAcme(page);
-  await page.request.put("/api/filter", { data: { cities: [], required: [], boosted: [], excluded: ["manager"] } });
+  await page.request.put("/api/filter", {
+    data: { cities: [], required: [], boosted: [], excluded: ["manager"], includeRemote: true },
+  });
   await page.goto("/");
   await expect(titles(page)).toHaveCount(2);
 
   await page.getByRole("button", { name: "Mark all as seen" }).click();
 
-  await expect(page.getByText("No Jobs pass your Filter")).toBeVisible();
+  await expect(page.getByText("You're all caught up: nothing new to review.")).toBeVisible();
+  await expect(page.getByText("1 Unseen Job is hidden by your Filter.")).toBeVisible();
   await expect(tab(page, "Seen")).toHaveAccessibleName("Seen 2");
   const jobs = ((await (await page.request.get("/api/jobs")).json()) as { jobs: Job[] }).jobs;
   expect(jobs.find((j) => j.title === "Office Manager")!.status).toBe("unseen");

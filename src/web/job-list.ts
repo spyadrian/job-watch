@@ -28,7 +28,7 @@ export interface JobRow {
   highlights: RowHighlights;
 }
 
-export const emptyFilter: Filter = { cities: [], required: [], boosted: [], excluded: [] };
+export const emptyFilter: Filter = { cities: [], required: [], boosted: [], excluded: [], includeRemote: true };
 
 const statusOfList: Record<ListKind, JobStatus> = {
   inbox: "unseen",
@@ -52,6 +52,42 @@ export function jobRows(jobs: readonly Job[], list: ListKind, filter: Filter, qu
       highlights.title = [...keywordHighlights(job.title, filter), ...highlights.title].sort(byPosition);
       return { job, highlights };
     });
+}
+
+/** Why a list has no rows. */
+export type EmptyListState =
+  | { kind: "loading" }
+  | { kind: "no-match"; query: string }
+  | { kind: "no-company" }
+  | { kind: "caught-up"; hiddenByFilter: number }
+  | { kind: "list-message" };
+
+/** What the page knows so far: whether the Jobs have loaded, and whether any Company is followed. */
+export interface LoadState {
+  jobsLoaded: boolean;
+  companies: "loading" | "failed" | "none" | "some";
+}
+
+/**
+ * Why `jobRows(jobs, list, filter, query)` is empty: not known yet (still loading), a search
+ * that matches nothing, an Inbox with no Company followed, an Inbox with nothing new to review
+ * (some Unseen Jobs maybe hidden by the Filter), or any other list's own empty message.
+ * When the Companies failed to load, the Inbox doesn't claim none are followed.
+ */
+export function emptyListState(
+  jobs: readonly Job[],
+  list: ListKind,
+  filter: Filter,
+  query: string,
+  loaded: LoadState,
+): EmptyListState {
+  if (!loaded.jobsLoaded) return { kind: "loading" };
+  if (query.trim() !== "" && jobRows(jobs, list, filter, "").length > 0) return { kind: "no-match", query: query.trim() };
+  if (list !== "inbox") return { kind: "list-message" };
+  if (loaded.companies === "loading") return { kind: "loading" };
+  const hiddenByFilter = jobs.filter((job) => job.status === "unseen" && !passesFilter(job, filter)).length;
+  if (loaded.companies === "none" && hiddenByFilter === 0) return { kind: "no-company" };
+  return { kind: "caught-up", hiddenByFilter };
 }
 
 const titleCollator = new Intl.Collator("en", { sensitivity: "base", numeric: true });

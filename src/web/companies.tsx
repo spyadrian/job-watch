@@ -6,6 +6,8 @@ import { timeAgo } from "./time-ago.ts";
 
 export interface CompaniesState {
   companies: Company[];
+  /** Whether the list has loaded at least once; until then `companies` is empty for lack of knowing. */
+  loaded: boolean;
   /** Set when the list could not be loaded. */
   loadError: string | null;
   reload(): void;
@@ -19,12 +21,14 @@ export interface CompaniesState {
  */
 export function useCompanies(onJobsChanged: () => void): CompaniesState {
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const reload = useCallback(() => {
     call<CompaniesResponse>("GET", "/api/companies")
       .then((data) => {
         setCompanies(data.companies);
+        setLoaded(true);
         setLoadError(null);
       })
       .catch((err: Error) => setLoadError(`Couldn't load Companies: ${err.message}`));
@@ -50,7 +54,7 @@ export function useCompanies(onJobsChanged: () => void): CompaniesState {
     [onJobsChanged],
   );
 
-  return { companies, loadError, reload, rename, remove };
+  return { companies, loaded, loadError, reload, rename, remove };
 }
 
 /** The followed Companies of the Companies tab: list with Source type, rename, remove. */

@@ -142,9 +142,14 @@ test("Show 50 more pages the list, j past the last shown Job too, and Mark all a
   // Mark all as seen marks the 50 Jobs shown, not the 5 beyond the page.
   await page.reload();
   await expect(rows(page)).toHaveCount(50);
-  await page.getByRole("button", { name: "Mark all as seen" }).click();
+  await expect(page.locator(".list-actions")).toContainText("55 Jobs");
+  const markShown = page.locator(".list-actions").getByRole("button");
+  await expect(markShown).toHaveText("Mark 50 as seen");
+  await markShown.click();
   await expectCounts(page, { Inbox: 5, Seen: 50 });
   await expect(rows(page)).toHaveCount(5);
+  await expect(page.locator(".list-actions")).toContainText("5 Jobs");
+  await expect(page.getByRole("button", { name: "Mark all as seen" })).toBeVisible();
   await expect(page.getByRole("status")).toContainText("Marked 50 Jobs as seen");
 });
 
