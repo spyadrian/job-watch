@@ -42,6 +42,14 @@ export interface Candidate {
   jobCount: number;
   /** Name of the Company already following this Source, or null. */
   alreadyFollowing: string | null;
+  /** Set when the read stopped at the most Jobs read from one Source while it has more. */
+  capped?: CappedRead;
+}
+
+/** A read that stopped at the most Jobs read from one Source: how many were read, of how many it has. */
+export interface CappedRead {
+  read: number;
+  total: number;
 }
 
 /** POST /api/companies/discover { input } → */
@@ -59,6 +67,8 @@ export interface Company {
   createdAt: string;
   /** Why the Source failed on the last read, or null when it was read fine. */
   lastError: CompanyError | null;
+  /** Set when the last successful read stopped at the most Jobs read from one Source while it has more. */
+  capped?: CappedRead;
 }
 
 /** A failed read of a Company's Source: the reason, and when (ISO 8601). */

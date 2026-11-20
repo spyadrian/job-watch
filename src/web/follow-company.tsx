@@ -1,6 +1,7 @@
 import { useId, useState, type FormEvent, type Ref } from "react";
 import type { Candidate, CreateCompanyResponse, DiscoverResponse } from "../shared/types.ts";
 import { call } from "./api.ts";
+import { cappedCount, NarrowingTip } from "./capped-read.tsx";
 import { plural } from "./plural.ts";
 
 type Step =
@@ -211,14 +212,20 @@ export function FollowCompany({
               {candidates.map((c, i) => (
                 <label key={`${c.source.type}:${c.source.key}`} className="choice">
                   <input type="radio" name="candidate" checked={i === chosen} onChange={() => choose(i, candidates)} />
-                  {c.suggestedName} · {c.sourceLabel} · {plural(c.jobCount, "job")}
+                  {c.suggestedName} · {c.sourceLabel} · {c.capped ? cappedCount(c.capped) : plural(c.jobCount, "job")}
                   {c.alreadyFollowing !== null && " · already followed"}
                 </label>
               ))}
             </fieldset>
           ) : (
             <p id={`${ids}-found`} className="found" role="status">
-              <strong>{plural(candidate.jobCount, "job")} found</strong> on {candidate.sourceLabel} ({candidate.source.key})
+              <strong>{candidate.capped ? cappedCount(candidate.capped) : `${plural(candidate.jobCount, "job")} found`}</strong> on{" "}
+              {candidate.sourceLabel} ({candidate.source.key})
+            </p>
+          )}
+          {candidate.capped && (
+            <p className="hint capped-hint">
+              This site has more jobs than Job Watch reads from one site. <NarrowingTip source={candidate.source} />
             </p>
           )}
           {candidate.alreadyFollowing !== null ? (

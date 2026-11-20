@@ -1051,3 +1051,21 @@ kbd {
 .company-error-when {
   color: var(--muted);
 }
+
+.company-capped {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.company-capped-label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.candidate .capped-hint {
+  flex-basis: 100%;
+  margin: 0;
+  overflow-wrap: anywhere;
+}

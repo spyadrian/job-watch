@@ -1,0 +1,48 @@
+{
+  "status": 200,
+  "error": {
+    "message": "",
+    "body": ""
+  },
+  "data": {
+    "positions": [
+      {
+        "id": 893394327177,
+        "displayJobId": "JR2015083",
+        "name": "Senior GPU Networking Architect",
+        "locations": [
+          "Switzerland, Zurich"
+        ],
+        "standardizedLocations": [
+          "Zürich, ZH, CH"
+        ],
+        "postedTs": 1792454400,
+        "department": "Architect",
+        "creationTs": 1773792000,
+        "workLocationOption": "onsite",
+        "atsJobId": "JR2015083",
+        "positionUrl": "/careers/job/893394327177"
+      },
+      {
+        "id": 893394712289,
+        "displayJobId": "JR2016341",
+        "name": "Senior Software Engineer, JAX",
+        "locations": [
+          "Remote - Switzerland",
+          "Remote - UK"
+        ],
+        "standardizedLocations": [
+          "CH",
+          "GB"
+        ],
+        "postedTs": 1792368000,
+        "department": "Engineer, Tech SW",
+        "creationTs": 1776038400,
+        "workLocationOption": "remote_local",
+        "atsJobId": "JR2016341",
+        "positionUrl": "/careers/job/893394712289"
+      }
+    ],
+    "count": 2
+  }
+}

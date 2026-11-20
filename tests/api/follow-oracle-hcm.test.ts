@@ -49,6 +49,15 @@ function requisitionsPage(offset: number, count: number, total: number) {
   };
 }
 
+/** A site whose API serves pages of `size` Jobs: `delivered` of `total` Jobs, from offset 0. */
+function smallPages(total: number, size: number, delivered = total) {
+  const sources: RecordedSources = { ...bigSite };
+  for (let offset = 0; offset < total; offset += size) {
+    sources[page(BIG, "CX_7", offset)] = requisitionsPage(offset, Math.max(0, Math.min(size, delivered - offset)), total);
+  }
+  return sources;
+}
+
 async function discover(sources: RecordedSources, input: string) {
   const { request, requested } = createTestApp({ sources });
   const res = await request("POST", "/api/companies/discover", { input });
@@ -152,6 +161,45 @@ describe("discovering an Oracle Cloud HCM site from a link", () => {
     expect(body.candidates[0].suggestedName).toBe("BigCo Careers");
   });
 
+  it("reads the pages after the first a few at a time, not one after another", async () => {
+    const sources: RecordedSources = { ...bigSite };
+    for (let n = 0; n < 10; n++) sources[page(BIG, "CX_7", n * 200)] = requisitionsPage(n * 200, n === 9 ? 47 : 200, 1847);
+    let inFlight = 0;
+    let mostInFlight = 0;
+    const { request } = createTestApp({
+      sources,
+      wrapFetch: (recorded) => async (input, init) => {
+        mostInFlight = Math.max(mostInFlight, ++inFlight);
+        try {
+          await new Promise((resolve) => setTimeout(resolve, 5));
+          return await recorded(input, init);
+        } finally {
+          inFlight--;
+        }
+      },
+    });
+
+    const res = await request("POST", "/api/companies/discover", { input: `https://${BIG}/hcmUI/CandidateExperience/en/sites/CX_7/requisitions` });
+
+    expect((await res.json()).candidates[0].jobCount).toBe(1847);
+    expect(mostInFlight).toBeGreaterThan(1);
+    expect(mostInFlight).toBeLessThanOrEqual(4);
+  });
+
+  it("keeps the API's order and counts a Job repeated on the next page once", async () => {
+    const first = requisitionsPage(0, 200, 400);
+    const second = requisitionsPage(200, 200, 400);
+    // A posting-date tie moved the last Job of page 1 onto page 2 as well.
+    second.body.items[0]!.requisitionList[0] = { ...first.body.items[0]!.requisitionList[199]! };
+    const { request } = createTestApp({ sources: { ...bigSite, [page(BIG, "CX_7", 0)]: first, [page(BIG, "CX_7", 200)]: second } });
+
+    const res = await request("POST", "/api/companies", { source: { type: "oracle-hcm", key: `${BIG}/CX_7` }, name: "BigCo" });
+
+    expect(res.status).toBe(201);
+    const { jobs } = await (await request("GET", "/api/jobs")).json();
+    expect(jobs).toHaveLength(399);
+  });
+
   it("follows the API's own page size when it answers fewer Jobs than asked", async () => {
     const short = (offset: number, count: number) => requisitionsPage(offset, count, 60);
     const { body } = await discover(
@@ -175,6 +223,7 @@ describe("discovering an Oracle Cloud HCM site from a link", () => {
 
     expect(res.status).toBe(200);
     expect(body.candidates[0].jobCount).toBe(5000);
+    expect(body.candidates[0].capped).toEqual({ read: 5000, total: 5400 });
   });
 
   it("fails as a whole when a later page fails, never returning a partial list", async () => {
@@ -191,14 +240,60 @@ describe("discovering an Oracle Cloud HCM site from a link", () => {
     expect(body.error).toBe(`The Oracle Cloud HCM site "${BIG}/CX_7" answered with an error (HTTP 503)`);
   });
 
-  it("refuses an answer in an unexpected format rather than reporting zero jobs", async () => {
+  it("fails as a whole when a middle page fails, even if the pages after it are read", async () => {
     const { res, body } = await discover(
-      { ...bigSite, [page(BIG, "CX_7", 0)]: { body: { items: [] } } },
+      {
+        ...bigSite,
+        [page(BIG, "CX_7", 0)]: requisitionsPage(0, 200, 700),
+        [page(BIG, "CX_7", 200)]: requisitionsPage(200, 200, 700),
+        [page(BIG, "CX_7", 400)]: { status: 500, body: "oops" },
+        [page(BIG, "CX_7", 600)]: requisitionsPage(600, 100, 700),
+      },
       `https://${BIG}/hcmUI/CandidateExperience/en/sites/CX_7/requisitions`,
     );
 
     expect(res.status).toBe(502);
-    expect(body.error).toMatch(/unexpected format/);
+    expect(body.error).toBe(`The Oracle Cloud HCM site "${BIG}/CX_7" answered with an error (HTTP 500)`);
+  });
+
+  // empty-requisitions.json is the API's real answer to a search that matches no Job.
+  it.each([
+    ["no requisitions (as recorded)", json("empty-requisitions")],
+    ["no search result at all", { body: { items: [], count: 0, hasMore: false } }],
+    ["a search result without a requisition list", { body: { items: [{ TotalJobsCount: 0, SiteNumber: "CX_7" }], count: 1 } }],
+  ])("reads a site with %s as 0 Jobs, still giving the site's name", async (_, answer) => {
+    const { res, body } = await discover(
+      { ...bigSite, [page(BIG, "CX_7", 0)]: answer },
+      `https://${BIG}/hcmUI/CandidateExperience/en/sites/CX_7/requisitions`,
+    );
+
+    expect(res.status).toBe(200);
+    expect(body.candidates).toEqual([
+      {
+        source: { type: "oracle-hcm", key: `${BIG}/CX_7` },
+        sourceLabel: "Oracle Cloud HCM",
+        suggestedName: "BigCo Careers",
+        jobCount: 0,
+        alreadyFollowing: null,
+      },
+    ]);
+  });
+
+  it.each([
+    ["not JSON", { body: "<html>maintenance</html>" }],
+    ["no items", { body: { count: 0 } }],
+    ["items that aren't a list", { body: { items: {} } }],
+    ["a requisition list that isn't a list", { body: { items: [{ TotalJobsCount: 1, requisitionList: "none" }] } }],
+    ["Jobs without a total count", { body: { items: [{ requisitionList: requisitionsPage(0, 1, 1).body.items[0]!.requisitionList }] } }],
+    ["a total count that isn't a number", { body: { items: [{ TotalJobsCount: "0", requisitionList: [] }] } }],
+  ])("refuses an answer with %s rather than reporting zero jobs", async (_, answer) => {
+    const { res, body } = await discover(
+      { ...bigSite, [page(BIG, "CX_7", 0)]: answer },
+      `https://${BIG}/hcmUI/CandidateExperience/en/sites/CX_7/requisitions`,
+    );
+
+    expect(res.status).toBe(502);
+    expect(body.error).toMatch(/unexpected format|valid JSON/);
   });
 
   it("reports a site number the instance doesn't have, instead of reading its default site", async () => {
@@ -216,6 +311,40 @@ describe("discovering an Oracle Cloud HCM site from a link", () => {
     const { requested } = await discover({}, "Acme");
 
     expect(requested.some((url) => url.includes("oraclecloud"))).toBe(false);
+  });
+});
+
+describe("an Oracle Cloud HCM site with more Jobs than one read takes", () => {
+  const link = `https://${BIG}/hcmUI/CandidateExperience/en/sites/CX_7/requisitions`;
+
+  it("says it stopped at 25 pages and how many Jobs the site has", async () => {
+    const { body, requested } = await discover(smallPages(60, 2), link);
+
+    expect(body.candidates[0]).toMatchObject({ jobCount: 50, capped: { read: 50, total: 60 } });
+    expect(requested.some((url) => url.includes("offset=50,"))).toBe(false);
+  });
+
+  it.each([
+    ["has exactly as many Jobs as 25 pages hold", smallPages(50, 2)],
+    ["delivers a couple fewer Jobs than it reports (as Oracle's own site: 2847 vs 2845)", smallPages(47, 2, 45)],
+    ["delivers fewer Jobs than it reports on its last allowed page", smallPages(50, 2, 49)],
+  ])("says nothing more when the site %s", async (_, sources) => {
+    const { body } = await discover(sources, link);
+
+    expect(body.candidates[0]).not.toHaveProperty("capped");
+  });
+
+  it("says so on the Company after each read", async () => {
+    const { request, sources } = createTestApp({ sources: smallPages(60, 2) });
+    const companies = async () => (await (await request("GET", "/api/companies")).json()).companies;
+
+    const res = await request("POST", "/api/companies", { source: { type: "oracle-hcm", key: `${BIG}/CX_7` }, name: "BigCo" });
+    expect((await res.json()).company.capped).toEqual({ read: 50, total: 60 });
+    expect((await companies())[0].capped).toEqual({ read: 50, total: 60 });
+
+    Object.assign(sources, smallPages(40, 2));
+    await (await request("POST", "/api/refresh")).text();
+    expect((await companies())[0]).not.toHaveProperty("capped");
   });
 });
 
@@ -254,5 +383,15 @@ describe("following an Oracle Cloud HCM site", () => {
         publishedAt: "2026-11-04T00:00:00.000Z",
       },
     ]);
+  });
+
+  it("marks its Jobs Outdated when the site no longer has any open Job", async () => {
+    const { request, sources } = createTestApp({ sources: recorded });
+    await request("POST", "/api/companies", { source: { type: "oracle-hcm", key: `${ELCA}/CX_1` }, name: "ELCA" });
+
+    sources[page(ELCA, "CX_1", 0)] = json("empty-requisitions");
+    const refresh = await (await request("POST", "/api/refresh")).text();
+
+    expect(refresh).toContain(`"summary":{"new":0,"outdated":3,"failed":0}`);
   });
 });
