@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useState, type FormEvent, type ReactNode
 import type { Filter } from "../shared/types.ts";
 import { call } from "./api.ts";
 import { emptyFilter } from "./job-list.ts";
+import { plural } from "./plural.ts";
 
 export interface FilterState {
   filter: Filter;
@@ -140,13 +141,15 @@ export function FilterPanel({ state }: { state: FilterState }) {
 }
 
 function summary(filter: Filter): string {
-  const parts: string[] = [];
-  const n = (count: number, one: string, many = `${one}s`) => count > 0 && parts.push(`${count} ${count === 1 ? one : many}`);
-  n(filter.cities.length, "city", "cities");
-  n(filter.required.length, "required");
-  n(filter.boosted.length, "boosted");
-  n(filter.excluded.length, "excluded");
-  return parts.join(" · ");
+  const cities = filter.cities.length;
+  return [
+    cities > 0 && `${cities} ${cities === 1 ? "city" : "cities"}`,
+    filter.required.length > 0 && plural(filter.required.length, "required keyword"),
+    filter.boosted.length > 0 && plural(filter.boosted.length, "boosted keyword"),
+    filter.excluded.length > 0 && plural(filter.excluded.length, "excluded keyword"),
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 /** One list of words (City filters or keywords): removable chips plus an add field. */
