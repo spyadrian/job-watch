@@ -1,0 +1,33 @@
+{
+  "items": [
+    {
+      "SiteId": 301948804863725,
+      "SiteName": "Oracle",
+      "SiteCode": "CX_45001",
+      "ThemeId": 301948804863726,
+      "Language": "US",
+      "DefaultLang": "US",
+      "SequenceNumber": 0,
+      "StatusCode": "ORA_ACTIVE",
+      "ThemeNumber": "default_minimal_theme_CX_45001",
+      "SiteNumber": "CX_45001",
+      "TemplateNumber": "minimal",
+      "CustomAction": null,
+      "ReplacementSiteNumber": null,
+      "EmailTemplateId": null,
+      "OgImageSrc": "https://www.oracle.com/a/ocom/img/logo-950x500.png",
+      "EventsEnabledFlag": "true",
+      "SiteURLName": "jobsearch",
+      "SeoDescription": null,
+      "SeoKeywords": null,
+      "SeoOrganizationLogo": null,
+      "SeoOrganizationName": null,
+      "SeoOrganizationSameAs": null,
+      "SMARTSearchSuggestion": null
+    }
+  ],
+  "count": 1,
+  "hasMore": false,
+  "limit": 499,
+  "offset": 0
+}

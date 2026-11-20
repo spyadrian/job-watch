@@ -51,6 +51,8 @@ export interface SourceAdapter {
    * (instead of an error), so an empty read doesn't prove the Company is there.
    */
   unknownKeyReadsEmpty?: boolean;
+  /** A Company name to suggest from the key, when the Source doesn't state one and the key isn't a plain slug. */
+  nameFromKey?(key: string): string;
   /** Reads every Job of the Source. Throws SourceError on any failure; never returns a partial list. */
   read(key: string, ctx: SourceContext): Promise<SourceRead>;
 }

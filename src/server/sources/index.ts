@@ -5,11 +5,15 @@ import { feed } from "./feed.ts";
 import { greenhouse } from "./greenhouse.ts";
 import { ashby } from "./ashby.ts";
 import { lever, leverEu } from "./lever.ts";
+import { jibe } from "./jibe.ts";
+import { oracleHcm } from "./oracle-hcm.ts";
 import { eightfold } from "./eightfold.ts";
 import { personio } from "./personio.ts";
 import { recruitee } from "./recruitee.ts";
 import { smartrecruiters } from "./smartrecruiters.ts";
 import { workable } from "./workable.ts";
+import { workday } from "./workday.ts";
+import { bamboohr } from "./bamboohr.ts";
 import type { SourceAdapter, SourceType } from "./types.ts";
 
 export const adapters: readonly SourceAdapter[] = [
@@ -21,6 +25,10 @@ export const adapters: readonly SourceAdapter[] = [
   recruitee,
   workable,
   personio,
+  bamboohr,
+  jibe,
+  workday,
+  oracleHcm,
   eightfold,
   feed,
 ];

@@ -1,0 +1,47 @@
+{
+  "items": [
+    {
+      "SearchId": 1,
+      "Keyword": null,
+      "Offset": 0,
+      "Limit": 200,
+      "SortBy": "POSTING_DATES_DESC",
+      "TotalJobsCount": 2,
+      "SiteNumber": "CX_1",
+      "requisitionList": [
+        {
+          "Id": "1306",
+          "Title": "Atlassian Specialist -  Consultant",
+          "PostedDate": "2026-11-19",
+          "PostingEndDate": null,
+          "Language": "US",
+          "PrimaryLocationCountry": "CH",
+          "HotJobFlag": false,
+          "WorkplaceTypeCode": "ORA_ON_SITE",
+          "ShortDescriptionStr": "",
+          "PrimaryLocation": "Geneva, Switzerland",
+          "WorkplaceType": "On-site",
+          "secondaryLocations": []
+        },
+        {
+          "Id": "1737",
+          "Title": "Senior Data Protection Integration Engineer (Consultant)",
+          "PostedDate": "2026-11-17",
+          "PostingEndDate": null,
+          "Language": "US",
+          "PrimaryLocationCountry": "CH",
+          "HotJobFlag": false,
+          "WorkplaceTypeCode": "ORA_ON_SITE",
+          "ShortDescriptionStr": "",
+          "PrimaryLocation": "Geneva, Switzerland",
+          "WorkplaceType": "On-site",
+          "secondaryLocations": []
+        }
+      ]
+    }
+  ],
+  "count": 1,
+  "hasMore": false,
+  "limit": 25,
+  "offset": 0
+}

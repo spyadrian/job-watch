@@ -17,6 +17,11 @@ const SUPPORTED_BOARDS = [
   "Recruitee",
   "Workable",
   "Personio",
+  "BambooHR",
+  "iCIMS (Jibe)",
+  "Workday",
+  "Oracle Cloud HCM",
+  "Eightfold",
 ];
 const supportedBoards = new Intl.ListFormat("en", { type: "disjunction" }).format(SUPPORTED_BOARDS);
 
