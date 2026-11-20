@@ -10,6 +10,7 @@
 // Requisitions come in pages of at most 200 (larger limits are capped). The first page gives
 // TotalJobsCount and the page size actually served; the remaining pages, up to the total and
 // never more than 25 pages in all, are then read in parallel (4 at a time) and kept in page order.
+// A read that stops at 25 pages while the site has more Jobs says it was capped, with the total.
 // A site with no open Job is a valid, empty read (see readPage).
 //
 // Links on a Company's own domain (careers.oracle.com) or using the site's URL name
@@ -100,6 +101,9 @@ export const oracleHcm: SourceAdapter = {
       offsets.push(offset);
     }
     const rest = await mapConcurrently(offsets, PAGE_CONCURRENCY, pageAt);
+    // Capped only when the bound left pages unread, not when the API merely delivers a few
+    // Jobs fewer than its total (Oracle's own site reports 2847 and serves 2845).
+    const stoppedAtBound = stride > 0 && stride * MAX_PAGES < first.total;
 
     const byId = new Map<string, Requisition>();
     for (const { list } of [first, ...rest]) {
@@ -117,7 +121,11 @@ export const oracleHcm: SourceAdapter = {
       publishedAt: isoDate(requisition.PostedDate),
     }));
     const companyName = site.SeoOrganizationName?.trim() || site.SiteName?.trim();
-    return companyName ? { jobs, companyName } : { jobs };
+    return {
+      jobs,
+      ...(companyName && { companyName }),
+      ...(stoppedAtBound && first.total > jobs.length && { capped: { total: first.total } }),
+    };
   },
 };
 

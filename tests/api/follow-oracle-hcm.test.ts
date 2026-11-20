@@ -49,6 +49,15 @@ function requisitionsPage(offset: number, count: number, total: number) {
   };
 }
 
+/** A site whose API serves pages of `size` Jobs: `delivered` of `total` Jobs, from offset 0. */
+function smallPages(total: number, size: number, delivered = total) {
+  const sources: RecordedSources = { ...bigSite };
+  for (let offset = 0; offset < total; offset += size) {
+    sources[page(BIG, "CX_7", offset)] = requisitionsPage(offset, Math.max(0, Math.min(size, delivered - offset)), total);
+  }
+  return sources;
+}
+
 async function discover(sources: RecordedSources, input: string) {
   const { request, requested } = createTestApp({ sources });
   const res = await request("POST", "/api/companies/discover", { input });
@@ -214,6 +223,7 @@ describe("discovering an Oracle Cloud HCM site from a link", () => {
 
     expect(res.status).toBe(200);
     expect(body.candidates[0].jobCount).toBe(5000);
+    expect(body.candidates[0].capped).toEqual({ read: 5000, total: 5400 });
   });
 
   it("fails as a whole when a later page fails, never returning a partial list", async () => {
@@ -301,6 +311,40 @@ describe("discovering an Oracle Cloud HCM site from a link", () => {
     const { requested } = await discover({}, "Acme");
 
     expect(requested.some((url) => url.includes("oraclecloud"))).toBe(false);
+  });
+});
+
+describe("an Oracle Cloud HCM site with more Jobs than one read takes", () => {
+  const link = `https://${BIG}/hcmUI/CandidateExperience/en/sites/CX_7/requisitions`;
+
+  it("says it stopped at 25 pages and how many Jobs the site has", async () => {
+    const { body, requested } = await discover(smallPages(60, 2), link);
+
+    expect(body.candidates[0]).toMatchObject({ jobCount: 50, capped: { read: 50, total: 60 } });
+    expect(requested.some((url) => url.includes("offset=50,"))).toBe(false);
+  });
+
+  it.each([
+    ["has exactly as many Jobs as 25 pages hold", smallPages(50, 2)],
+    ["delivers a couple fewer Jobs than it reports (as Oracle's own site: 2847 vs 2845)", smallPages(47, 2, 45)],
+    ["delivers fewer Jobs than it reports on its last allowed page", smallPages(50, 2, 49)],
+  ])("says nothing more when the site %s", async (_, sources) => {
+    const { body } = await discover(sources, link);
+
+    expect(body.candidates[0]).not.toHaveProperty("capped");
+  });
+
+  it("says so on the Company after each read", async () => {
+    const { request, sources } = createTestApp({ sources: smallPages(60, 2) });
+    const companies = async () => (await (await request("GET", "/api/companies")).json()).companies;
+
+    const res = await request("POST", "/api/companies", { source: { type: "oracle-hcm", key: `${BIG}/CX_7` }, name: "BigCo" });
+    expect((await res.json()).company.capped).toEqual({ read: 50, total: 60 });
+    expect((await companies())[0].capped).toEqual({ read: 50, total: 60 });
+
+    Object.assign(sources, smallPages(40, 2));
+    await (await request("POST", "/api/refresh")).text();
+    expect((await companies())[0]).not.toHaveProperty("capped");
   });
 });
 
