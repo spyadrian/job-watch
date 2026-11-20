@@ -1,0 +1,91 @@
+{
+  "jobs": [
+    {
+      "data": {
+        "slug": "11705",
+        "language": "en-us",
+        "req_id": "11705",
+        "title": "Reward Manager",
+        "city": "Prague",
+        "country": "Czech Republic",
+        "country_code": "CZ",
+        "categories": [
+          {
+            "name": "Human Resources"
+          }
+        ],
+        "employment_type": "FULL_TIME",
+        "hiring_organization": "SITA Switzerland Sarl",
+        "posted_date": "2026-11-04T14:24:00+0000",
+        "apply_url": "https://careers-sita.icims.com/jobs/11705/login",
+        "full_location": "Prague, Czech Republic",
+        "short_location": "Prague, Czech Republic",
+        "multipleLocations": false,
+        "meta_data": {
+          "canonical_url": "https://careers.sita.aero/jobs/11705?lang=en-us"
+        }
+      }
+    },
+    {
+      "data": {
+        "slug": "10799",
+        "language": "en-us",
+        "req_id": "10799",
+        "title": "Senior Software Developer",
+        "city": "Sydney",
+        "country": "Australia",
+        "country_code": "AU",
+        "categories": [
+          {
+            "name": "Technology Management"
+          }
+        ],
+        "employment_type": "FULL_TIME",
+        "hiring_organization": "SITA Switzerland Sarl",
+        "posted_date": "2026-08-12T09:52:00+0000",
+        "apply_url": "https://careers-sita.icims.com/jobs/10799/login",
+        "full_location": "Sydney, Australia",
+        "short_location": "Sydney, Australia",
+        "multipleLocations": false,
+        "meta_data": {
+          "canonical_url": "https://careers.sita.aero/jobs/10799?lang=en-us"
+        }
+      }
+    },
+    {
+      "data": {
+        "slug": "11537",
+        "language": "en-us",
+        "req_id": "11537",
+        "title": "Senior Manager Business Operations",
+        "city": "Delhi",
+        "country": "India",
+        "country_code": "IN",
+        "categories": [
+          {
+            "name": "Service Management"
+          }
+        ],
+        "employment_type": "FULL_TIME",
+        "hiring_organization": "SITA Switzerland Sarl",
+        "posted_date": "2026-10-12T12:15:00+0000",
+        "apply_url": "https://careers-sita.icims.com/jobs/11537/login",
+        "full_location": "Delhi, India; Amman, Jordan",
+        "short_location": "Delhi, India",
+        "multipleLocations": true,
+        "additional_locations": [
+          {
+            "city": "Amman",
+            "country": "Jordan",
+            "country_code": "JO"
+          }
+        ],
+        "meta_data": {
+          "canonical_url": "https://careers.sita.aero/jobs/11537?lang=en-us"
+        }
+      }
+    }
+  ],
+  "totalCount": 3,
+  "count": 3
+}
