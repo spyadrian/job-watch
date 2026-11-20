@@ -6,7 +6,7 @@ An account-free job watcher: follow the Companies you care about and review thei
 
 ## What it does
 
-- **Follow Companies.** Paste a job board, careers page or feed link, or type a Company name; Job Watch finds the Company's Source and reads its open Jobs. Supported Sources: Greenhouse, Lever (US and EU), Ashby, SmartRecruiters, Recruitee, Workable, Personio, iCIMS careers sites built on Jibe, Workday careers sites, and any RSS/Atom feed.
+- **Follow Companies.** Paste a job board, careers page or feed link, or type a Company name; Job Watch finds the Company's Source and reads its open Jobs. Supported Sources: Greenhouse, Lever (US and EU), Ashby, SmartRecruiters, Recruitee, Workable, Personio, iCIMS careers sites built on Jibe, Workday careers sites, Oracle Cloud HCM (Oracle Recruiting Cloud careers sites), and any RSS/Atom feed.
 - **Shortcuts** for careers sites whose Jobs can't be read automatically: one click opens them in a new tab.
 - **One Inbox** of the Unseen Jobs that pass your **Filter**: City filters (with several spellings, e.g. Geneva / Genève / Genf), whether to include remote Jobs, and Required (green), Boosted (yellow) and Excluded (red) keywords.
 - **Statuses.** Every Job is Unseen, Seen, Saved or Applied, each with its own list. A Job that disappears from its Source after a Refresh is marked Outdated.

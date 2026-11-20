@@ -1,0 +1,33 @@
+{
+  "items": [
+    {
+      "SiteId": 100000033268759,
+      "SiteName": "ELCA Switzerland and Europe",
+      "SiteCode": "ELCA_Switzerland",
+      "ThemeId": 100000033269266,
+      "Language": "US",
+      "DefaultLang": "US",
+      "SequenceNumber": 4,
+      "StatusCode": "ORA_ACTIVE",
+      "ThemeNumber": "12",
+      "SiteNumber": "CX_1",
+      "TemplateNumber": "minimal",
+      "CustomAction": null,
+      "ReplacementSiteNumber": null,
+      "EmailTemplateId": null,
+      "OgImageSrc": null,
+      "EventsEnabledFlag": "false",
+      "SiteURLName": null,
+      "SeoDescription": null,
+      "SeoKeywords": null,
+      "SeoOrganizationLogo": null,
+      "SeoOrganizationName": null,
+      "SeoOrganizationSameAs": null,
+      "SMARTSearchSuggestion": null
+    }
+  ],
+  "count": 1,
+  "hasMore": false,
+  "limit": 499,
+  "offset": 0
+}

@@ -1,0 +1,81 @@
+{
+  "items": [
+    {
+      "SearchId": 1,
+      "Keyword": null,
+      "Offset": 0,
+      "Limit": 200,
+      "SortBy": "POSTING_DATES_DESC",
+      "TotalJobsCount": 3,
+      "SiteNumber": "CX_1",
+      "requisitionList": [
+        {
+          "Id": "2793",
+          "Title": "Junior Java Engineer",
+          "PostedDate": "2026-11-18",
+          "PostingEndDate": null,
+          "Language": "US",
+          "PrimaryLocationCountry": "CH",
+          "HotJobFlag": false,
+          "WorkplaceTypeCode": null,
+          "ShortDescriptionStr": "",
+          "PrimaryLocation": "Zurich, Switzerland",
+          "WorkplaceType": "",
+          "secondaryLocations": [
+            {
+              "RequisitionLocationId": 300000083648205,
+              "GeographyNodeId": 100000053956668,
+              "GeographyId": 100000007654380,
+              "Name": "Bern, Switzerland",
+              "CountryCode": "CH",
+              "Latitude": 46.59826,
+              "Longitude": 7.90768
+            }
+          ]
+        },
+        {
+          "Id": "2969",
+          "Title": "Consultant, ELCA Advisory",
+          "PostedDate": "2026-11-04",
+          "PostingEndDate": null,
+          "Language": "US",
+          "PrimaryLocationCountry": "CH",
+          "HotJobFlag": false,
+          "WorkplaceTypeCode": null,
+          "ShortDescriptionStr": "",
+          "PrimaryLocation": "Pully, Switzerland",
+          "WorkplaceType": "",
+          "secondaryLocations": [
+            {
+              "RequisitionLocationId": 300000101540424,
+              "GeographyNodeId": 100000053956678,
+              "GeographyId": 100000007654384,
+              "Name": "Geneva, Switzerland",
+              "CountryCode": "CH",
+              "Latitude": null,
+              "Longitude": null
+            }
+          ]
+        },
+        {
+          "Id": "2943",
+          "Title": "Data Engineer",
+          "PostedDate": "2026-10-21",
+          "PostingEndDate": null,
+          "Language": "US",
+          "PrimaryLocationCountry": "IT",
+          "HotJobFlag": false,
+          "WorkplaceTypeCode": null,
+          "ShortDescriptionStr": "",
+          "PrimaryLocation": "Palermo, Italy",
+          "WorkplaceType": "",
+          "secondaryLocations": []
+        }
+      ]
+    }
+  ],
+  "count": 1,
+  "hasMore": false,
+  "limit": 25,
+  "offset": 0
+}

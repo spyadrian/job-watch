@@ -102,10 +102,10 @@ async function readCandidates(refs: SourceRef[], deps: DiscoveryDeps): Promise<D
 
 /**
  * Source types whose key a name can't give without guessing a host: a feed's URL, the
- * host of a Jibe careers site (on the employer's own domain), and a Workday site
- * (tenant, data centre and site name).
+ * host of a Jibe careers site (on the employer's own domain), a Workday site (tenant,
+ * data centre and site name), and an Oracle Cloud HCM instance host and site number.
  */
-const NOT_BY_NAME: ReadonlySet<string> = new Set(["feed", "jibe", "workday"]);
+const NOT_BY_NAME: ReadonlySet<string> = new Set(["feed", "jibe", "workday", "oracle-hcm"]);
 
 /**
  * Tries a Company name's candidate slugs on every ATS in parallel. A board that

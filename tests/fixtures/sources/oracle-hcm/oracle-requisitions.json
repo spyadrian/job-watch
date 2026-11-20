@@ -1,0 +1,66 @@
+{
+  "items": [
+    {
+      "SearchId": 1,
+      "Keyword": null,
+      "Offset": 0,
+      "Limit": 200,
+      "SortBy": "POSTING_DATES_DESC",
+      "TotalJobsCount": 2,
+      "SiteNumber": "CX_45001",
+      "requisitionList": [
+        {
+          "Id": "349064",
+          "Title": "Senior Data Scientist - Demand Planning and Forecasting",
+          "PostedDate": "2026-11-20",
+          "PostingEndDate": null,
+          "Language": "US",
+          "PrimaryLocationCountry": "US",
+          "HotJobFlag": false,
+          "WorkplaceTypeCode": null,
+          "ShortDescriptionStr": "",
+          "PrimaryLocation": "Seattle, WA, United States",
+          "WorkplaceType": "",
+          "secondaryLocations": []
+        },
+        {
+          "Id": "350293",
+          "Title": "Senior Data Systems Software Engineer",
+          "PostedDate": "2026-11-20",
+          "PostingEndDate": null,
+          "Language": "US",
+          "PrimaryLocationCountry": "IN",
+          "HotJobFlag": false,
+          "WorkplaceTypeCode": null,
+          "ShortDescriptionStr": "",
+          "PrimaryLocation": "India",
+          "WorkplaceType": "",
+          "secondaryLocations": [
+            {
+              "RequisitionLocationId": 302971401219756,
+              "GeographyNodeId": 100879842726781,
+              "GeographyId": 300001842985425,
+              "Name": "BENGALURU, KARNATAKA, India",
+              "CountryCode": "IN",
+              "Latitude": 12.99838,
+              "Longitude": 77.73981
+            },
+            {
+              "RequisitionLocationId": 302971401219757,
+              "GeographyNodeId": 100879842726385,
+              "GeographyId": 300001842985746,
+              "Name": "NOIDA, UTTAR PRADESH, India",
+              "CountryCode": "IN",
+              "Latitude": 28.53341,
+              "Longitude": 77.3821
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "count": 1,
+  "hasMore": false,
+  "limit": 25,
+  "offset": 0
+}

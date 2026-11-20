@@ -1,0 +1,33 @@
+{
+  "items": [
+    {
+      "SiteId": 100000037567683,
+      "SiteName": "UBP",
+      "SiteCode": "UBP",
+      "ThemeId": 100000037567951,
+      "Language": "US",
+      "DefaultLang": "US",
+      "SequenceNumber": 1,
+      "StatusCode": "ORA_ACTIVE",
+      "ThemeNumber": "3",
+      "SiteNumber": "CX_1",
+      "TemplateNumber": "minimal",
+      "CustomAction": null,
+      "ReplacementSiteNumber": null,
+      "EmailTemplateId": null,
+      "OgImageSrc": null,
+      "EventsEnabledFlag": "false",
+      "SiteURLName": null,
+      "SeoDescription": null,
+      "SeoKeywords": null,
+      "SeoOrganizationLogo": null,
+      "SeoOrganizationName": null,
+      "SeoOrganizationSameAs": null,
+      "SMARTSearchSuggestion": null
+    }
+  ],
+  "count": 1,
+  "hasMore": false,
+  "limit": 499,
+  "offset": 0
+}
