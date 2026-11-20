@@ -60,6 +60,30 @@ test("edits the Filter in a collapsible panel; it is saved, applied to the Inbox
   await expectTitles(page, ["Senior Backend Engineer"]);
 });
 
+test("the collapsed Filter summary counts City filters and keywords in plain English", async ({ page }) => {
+  const summary = page.getByRole("region", { name: "Filter" }).locator(".filter-summary");
+  const put = (filter: object) =>
+    page.request.put("/api/filter", { data: { includeRemote: true, ...filter } });
+
+  await put({ cities: [["Bern"]], required: ["designer"], boosted: ["senior"], excluded: ["manager"] });
+  await page.goto("/");
+  await expect(summary).toHaveText("1 city · 1 required keyword · 1 boosted keyword · 1 excluded keyword");
+
+  await put({
+    cities: [["Bern"], ["Zurich"], ["Geneva"]],
+    required: ["a", "b", "c", "d", "e", "f"],
+    boosted: ["g", "h"],
+    excluded: ["i", "j"],
+  });
+  await page.reload();
+  await expect(summary).toHaveText("3 cities · 6 required keywords · 2 boosted keywords · 2 excluded keywords");
+
+  // Parts with a count of 0 are left out.
+  await put({ cities: [], required: ["a", "b"], boosted: [], excluded: [] });
+  await page.reload();
+  await expect(summary).toHaveText("2 required keywords");
+});
+
 test("unchecking Include remote Jobs removes remote Jobs from the Inbox; it is saved", async ({ page }) => {
   await followAcme(page);
   await page.request.put("/api/filter", {

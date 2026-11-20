@@ -2,6 +2,9 @@
 .agents/
 .claude/skills/
 
+# Claude Code subagent worktrees
+.claude/worktrees/
+
 # Local Claude Code settings
 .claude/settings.local.json
 
