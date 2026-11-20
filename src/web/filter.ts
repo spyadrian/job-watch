@@ -60,11 +60,15 @@ function containsWholeWords(location: string, spelling: string): boolean {
   for (let at = location.indexOf(spelling); at !== -1; at = location.indexOf(spelling, at + 1)) {
     const before = location.slice(0, at);
     const after = location.slice(at + spelling.length);
-    const startsWord = !wordChar.test([...spelling][0] ?? "") || !wordChar.test(lastChar(before));
-    const endsWord = !wordChar.test(lastChar(spelling)) || !wordChar.test(after[0] ?? "");
+    const startsWord = !wordChar.test(firstChar(spelling)) || !wordChar.test(lastChar(before));
+    const endsWord = !wordChar.test(lastChar(spelling)) || !wordChar.test(firstChar(after));
     if (startsWord && endsWord) return true;
   }
   return false;
+}
+
+function firstChar(s: string): string {
+  return [...s][0] ?? "";
 }
 
 function lastChar(s: string): string {

@@ -1,13 +1,12 @@
 import { useId, useState, type FormEvent, type Ref } from "react";
 import type { Candidate, CreateCompanyResponse, DiscoverResponse } from "../shared/types.ts";
 import { call } from "./api.ts";
+import { plural } from "./plural.ts";
 
 type Step =
   | { kind: "idle" }
   | { kind: "found"; candidates: Candidate[]; unreachable?: string }
   | { kind: "done"; message: string };
-
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /** Job board kinds named in the hint; one line per supported ATS. */
 const SUPPORTED_BOARDS = [
