@@ -6,6 +6,7 @@ import { RequestError } from "./errors.ts";
 import { createRefresher } from "./refresh.ts";
 import { registerCompanyRoutes } from "./routes/companies.ts";
 import { registerRefreshRoutes } from "./routes/refresh.ts";
+import { registerDataRoutes } from "./routes/data.ts";
 import { registerFilterRoutes } from "./routes/filter.ts";
 import { registerJobRoutes } from "./routes/jobs.ts";
 import { registerShortcutRoutes } from "./routes/shortcuts.ts";
@@ -38,6 +39,7 @@ export function createApp(deps: AppDeps): Hono {
   const refresher = createRefresher(deps);
   registerRefreshRoutes(api, refresher);
   registerFilterRoutes(api, deps);
+  registerDataRoutes(api, deps);
   if (deps.testReset) {
     api.post("/test/reset", (c) => {
       refresher.reset();
