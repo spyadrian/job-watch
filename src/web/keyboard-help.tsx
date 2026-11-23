@@ -10,6 +10,7 @@ const shortcuts: { keys: string[]; does: string }[] = [
   { keys: ["u"], does: "Undo the last status change" },
   { keys: ["/"], does: "Focus the search" },
   { keys: ["Esc"], does: "Clear the search" },
+  { keys: ["g"], does: "Open the Shortcuts menu" },
   { keys: ["?"], does: "Show these shortcuts" },
 ];
 

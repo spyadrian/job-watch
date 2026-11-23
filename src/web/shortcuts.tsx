@@ -1,7 +1,16 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type RefObject,
+} from "react";
 import type { Shortcut } from "../shared/types.ts";
 import { call } from "./api.ts";
 import { ManagedRow } from "./managed-row.tsx";
+import { fold } from "./text-match.ts";
 
 export interface ShortcutsState {
   shortcuts: Shortcut[];
@@ -45,28 +54,144 @@ export function useShortcuts(): ShortcutsState {
   return { shortcuts, loadError, add, rename, remove };
 }
 
-function ShortcutLink({ shortcut, className }: { shortcut: Shortcut; className?: string }) {
+function ShortcutLink({ shortcut, className, onOpen }: { shortcut: Shortcut; className?: string; onOpen?: () => void }) {
   return (
-    <a href={shortcut.url} target="_blank" rel="noopener noreferrer" className={className}>
+    <a href={shortcut.url} target="_blank" rel="noopener noreferrer" className={className} onClick={onOpen}>
       {shortcut.name}
       <span className="visually-hidden"> (opens in a new tab)</span>
     </a>
   );
 }
 
-/** Small links in the app header. */
-export function HeaderShortcuts({ shortcuts }: { shortcuts: Shortcut[] }) {
+/** From this many Shortcuts, the header menu starts with a filter field. */
+const FILTER_FROM = 11;
+
+/** Open state of the header's Shortcuts menu, shared with the global `g` key (see App). */
+export function useShortcutsMenu() {
+  const [open, setOpen] = useState(false);
+  return { open, setOpen };
+}
+
+export type ShortcutsMenuState = ReturnType<typeof useShortcutsMenu>;
+
+/**
+ * One header button that opens the Shortcuts: a dropdown on wide screens, a full-width
+ * disclosure on narrow ones (CSS). Closes on Esc (focus back to the button), on a click
+ * outside, and after opening a Shortcut. Arrow keys move through the filter and the items.
+ */
+export function ShortcutsMenu({
+  shortcuts,
+  menu,
+  onManage,
+}: {
+  shortcuts: Shortcut[];
+  menu: ShortcutsMenuState;
+  onManage: () => void;
+}) {
+  const { open, setOpen } = menu;
+  const [query, setQuery] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const filterable = shortcuts.length >= FILTER_FROM;
+  const needle = fold(query.trim());
+  const shown = needle === "" ? shortcuts : shortcuts.filter((s) => fold(s.name).includes(needle));
+
+  // On open, focus the filter field, or the first Shortcut when there is none.
+  useEffect(() => {
+    if (!open) {
+      setQuery("");
+      return;
+    }
+    panelRef.current?.querySelector<HTMLElement>("input, a")?.focus();
+  }, [open]);
+
+  // A click outside closes the menu.
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(e: PointerEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open, setOpen]);
+
   if (shortcuts.length === 0) return null;
+
+  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (!open) return;
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setOpen(false);
+      buttonRef.current?.focus();
+      return;
+    }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
+    // Home / End stay in the filter field, where they move the caret.
+    if ((e.key === "Home" || e.key === "End") && e.target instanceof HTMLInputElement) return;
+    const items = [...(panelRef.current?.querySelectorAll<HTMLElement>("input, a, button") ?? [])];
+    if (items.length === 0) return;
+    e.preventDefault();
+    const at = items.indexOf(document.activeElement as HTMLElement);
+    let next: number;
+    if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = items.length - 1;
+    else if (e.key === "ArrowDown") next = Math.min(at + 1, items.length - 1);
+    else next = Math.max(at - 1, 0);
+    items[next]!.focus();
+  }
+
   return (
-    <nav aria-label="Shortcuts" className="header-shortcuts">
-      <ul>
-        {shortcuts.map((s) => (
-          <li key={s.id}>
-            <ShortcutLink shortcut={s} />
-          </li>
-        ))}
-      </ul>
-    </nav>
+    <div ref={rootRef} className="shortcuts-menu" onKeyDown={onKeyDown}>
+      <button
+        ref={buttonRef}
+        type="button"
+        className="shortcuts-button"
+        aria-expanded={open}
+        aria-controls="shortcuts-panel"
+        aria-keyshortcuts="g"
+        title="Shortcuts (g)"
+        onClick={() => setOpen(!open)}
+      >
+        Shortcuts<span className="shortcuts-count"> · {shortcuts.length}</span>
+        <span className="shortcuts-chevron" aria-hidden="true" />
+      </button>
+      <nav ref={panelRef} id="shortcuts-panel" aria-label="Shortcuts" className="shortcuts-panel" hidden={!open}>
+        {filterable && (
+          <input
+            type="search"
+            className="shortcuts-filter"
+            aria-label="Filter Shortcuts"
+            placeholder="Filter Shortcuts"
+            autoComplete="off"
+            spellCheck={false}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        )}
+        {shown.length === 0 ? (
+          <p className="hint shortcuts-none">No Shortcut matches “{query.trim()}”.</p>
+        ) : (
+          <ul>
+            {shown.map((s) => (
+              <li key={s.id}>
+                <ShortcutLink shortcut={s} onOpen={() => setOpen(false)} />
+              </li>
+            ))}
+          </ul>
+        )}
+        <button
+          type="button"
+          className="shortcuts-manage"
+          onClick={() => {
+            setOpen(false);
+            onManage();
+          }}
+        >
+          Manage Shortcuts
+        </button>
+      </nav>
+    </div>
   );
 }
 
