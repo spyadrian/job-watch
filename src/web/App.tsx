@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { Job } from "../shared/types.ts";
 import { call } from "./api.ts";
+import { DataSection } from "./data.tsx";
 import { CompaniesSection, useCompanies, type CompaniesState } from "./companies.tsx";
 import { FollowCompany } from "./follow-company.tsx";
 import { useGlobalKeys } from "./global-keys.ts";
@@ -135,6 +136,15 @@ export function App() {
               />
               <CompaniesSection state={companies} />
               <ShortcutsSection state={shortcuts} />
+              <DataSection
+                filter={filter.filter}
+                onImported={() => {
+                  jobs.reload();
+                  companies.reload();
+                  shortcuts.reload();
+                  filter.reload();
+                }}
+              />
             </>
           ) : (
             <>

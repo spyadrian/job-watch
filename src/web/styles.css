@@ -1069,3 +1069,50 @@ kbd {
   margin: 0;
   overflow-wrap: anywhere;
 }
+
+/* Data: export and import (data-and-shortcuts 01) */
+.button-link {
+  display: inline-block;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  text-decoration: none;
+}
+
+.button-link:hover {
+  border-color: var(--muted);
+}
+
+.data-import {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 16px;
+}
+
+.data-import label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.data-import label.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+}
+
+.data-import input[type="file"] {
+  max-width: 100%;
+}
+
+.data-summary {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+}

@@ -121,3 +121,41 @@ export interface Filter {
   /** Whether a Job with a remote location passes City filters ("Include remote Jobs"). */
   includeRemote: boolean;
 }
+
+/** GET /api/export → one file with everything Job Watch stores; POST /api/import reads it back. */
+export interface ExportFile {
+  format: "job-watch";
+  version: 1;
+  /** ISO 8601. */
+  exportedAt: string;
+  companies: { name: string; source: SourceRef }[];
+  shortcuts: { name: string; url: string; position: number }[];
+  filter: Filter;
+  /** Every Job that isn't Unseen (Unseen Jobs come back on the next Refresh). */
+  jobs: ExportedJob[];
+}
+
+/** A Job identified by its Company's Source and the Source's own Job id. */
+export interface ExportedJob {
+  /** Null only for Jobs kept from a Company removed before Jobs remembered their Source. */
+  source: SourceRef | null;
+  sourceJobId: string;
+  /** The Company's name, or its kept name once the Company is removed. */
+  companyName: string;
+  title: string;
+  url: string;
+  locations: string[];
+  publishedAt: string | null;
+  firstFetchedAt: string;
+  status: JobStatus;
+  wasSaved: boolean;
+  outdated: boolean;
+}
+
+/** POST /api/import?filter=replace|keep → what the import changed. */
+export interface ImportSummary {
+  companies: { added: number; alreadyFollowed: number };
+  shortcuts: { added: number; skipped: number };
+  filter: "replaced" | "kept";
+  jobs: { added: number; statusesRestored: number; skipped: number };
+}

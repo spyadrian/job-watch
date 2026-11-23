@@ -7,6 +7,8 @@ export interface ShortcutsState {
   shortcuts: Shortcut[];
   /** Set when the list could not be loaded. */
   loadError: string | null;
+  /** Loads the list again, e.g. after an import. */
+  reload(): void;
   add(name: string, url: string): Promise<void>;
   rename(id: number, name: string): Promise<void>;
   remove(id: number): Promise<void>;
@@ -17,15 +19,21 @@ export function useShortcuts(): ShortcutsState {
   const [shortcuts, setShortcuts] = useState<Shortcut[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     let cancelled = false;
     call<{ shortcuts: Shortcut[] }>("GET", "/api/shortcuts")
-      .then((data) => !cancelled && setShortcuts(data.shortcuts))
+      .then((data) => {
+        if (cancelled) return;
+        setShortcuts(data.shortcuts);
+        setLoadError(null);
+      })
       .catch((err: Error) => !cancelled && setLoadError(err.message));
     return () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(reload, [reload]);
 
   const add = useCallback(async (name: string, url: string) => {
     const { shortcut } = await call<{ shortcut: Shortcut }>("POST", "/api/shortcuts", { name, url });
@@ -42,7 +50,7 @@ export function useShortcuts(): ShortcutsState {
     setShortcuts((list) => list.filter((s) => s.id !== id));
   }, []);
 
-  return { shortcuts, loadError, add, rename, remove };
+  return { shortcuts, loadError, reload, add, rename, remove };
 }
 
 function ShortcutLink({ shortcut, className }: { shortcut: Shortcut; className?: string }) {

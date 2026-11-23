@@ -10,6 +10,8 @@ export interface FilterState {
   filter: Filter;
   save: (next: Filter) => void;
   error: string | null;
+  /** Loads the stored Filter again, e.g. after an import. */
+  reload: () => void;
 }
 
 /** The stored Filter, loaded once; `save` replaces it (optimistically). */
@@ -17,11 +19,16 @@ export function useFilter(): FilterState {
   const [filter, setFilter] = useState<Filter>(emptyFilter);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     call<{ filter: Filter }>("GET", "/api/filter")
-      .then((res) => setFilter(res.filter))
+      .then((res) => {
+        setFilter(res.filter);
+        setError(null);
+      })
       .catch((err: Error) => setError(`Couldn't load the Filter: ${err.message}`));
   }, []);
+
+  useEffect(reload, [reload]);
 
   const save = useCallback((next: Filter) => {
     let previous: Filter = emptyFilter;
@@ -40,7 +47,7 @@ export function useFilter(): FilterState {
       });
   }, []);
 
-  return { filter, save, error };
+  return { filter, save, error, reload };
 }
 
 const OPEN_KEY = "job-watch.filter-open";
