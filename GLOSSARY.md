@@ -77,3 +77,17 @@ _Avoid_: Priority keyword, highlight
 **Excluded keyword**:
 A word that, when in a Job's title, keeps the Job out of the Inbox (shown red).
 _Avoid_: Blocked keyword, negative keyword
+
+### Data
+
+**Data**:
+The section of the Companies tab where the person makes an Export or an Import.
+_Avoid_: Backup, settings
+
+**Export**:
+The JSON file of everything Job Watch stores (Companies, Shortcuts, the Filter and Jobs with their status), except Unseen Jobs, which the next Refresh reads again.
+_Avoid_: Backup, dump, download
+
+**Import**:
+Merging an Export into an instance: it adds the Companies and Shortcuts not there yet, may replace the Filter, adds the file's Jobs not stored yet with their status, and gives each stored Job the file's status when that status is further along (Unseen < Seen < Saved < Applied). A status never goes down, and no Source is read. The Import summary counts each Job that takes its status from the file, new or moved further along, as a "restored Job status".
+_Avoid_: Restore, upload, sync

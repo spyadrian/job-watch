@@ -14,9 +14,13 @@ export function isTyping(target: EventTarget | null): boolean {
   return false;
 }
 
+/** The attribute of an element whose keys are its own, like an open menu: page-wide keys are ignored inside it. */
+const ownKeys = "data-own-keys";
+
 /**
  * Page-wide keyboard shortcuts. Ignored while typing in a text field, inside an open dialog
- * (the page behind a modal is inert), and when Ctrl, Alt or Meta is held, so they never steal
+ * (the page behind a modal is inert) or an element marked `data-own-keys` (the open
+ * Shortcuts menu), and when Ctrl, Alt or Meta is held, so they never steal
  * a character or a browser shortcut. A handled key's default is prevented.
  */
 export function useGlobalKeys(handlers: KeyHandlers): void {
@@ -27,7 +31,7 @@ export function useGlobalKeys(handlers: KeyHandlers): void {
     function onKeyDown(e: KeyboardEvent) {
       if (e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey || e.isComposing) return;
       if (isTyping(e.target)) return;
-      if (e.target instanceof Element && e.target.closest("dialog[open]")) return;
+      if (e.target instanceof Element && e.target.closest(`dialog[open], [${ownKeys}]`)) return;
       const handler = current.current[e.key];
       if (!handler) return;
       if (handler(e) === false) return;
