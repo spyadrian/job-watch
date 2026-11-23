@@ -2,12 +2,13 @@
 // move their data between instances (Docker, npm start, another machine) or keep a backup.
 // Routes live in routes/data.ts.
 import type { ExportedJob, ExportFile, Filter, ImportSummary, JobStatus, SourceRef } from "../shared/types.ts";
-import { jobStatuses } from "../shared/job-lifecycle.ts";
+import { isEmptyFilter } from "../shared/filter.ts";
+import { isUnseenOrSeen, jobStatuses } from "../shared/job-lifecycle.ts";
 import type { AppDeps } from "./app.ts";
 import { companyFollowing } from "./companies.ts";
 import { inTransaction, type Database } from "./db.ts";
 import { RequestError } from "./errors.ts";
-import { isEmptyFilter, parseFilter, readFilter, saveFilter } from "./filter.ts";
+import { parseFilter, readFilter, saveFilter } from "./filter.ts";
 import { addShortcut } from "./shortcuts.ts";
 import { adapterFor } from "./sources/index.ts";
 
@@ -36,7 +37,7 @@ export function exportData({ db, clock }: Pick<AppDeps, "db" | "clock">): Export
     version: 1,
     exportedAt: clock.now().toISOString(),
     companies: companies.map((c) => ({ name: c.name, source: { type: c.source_type, key: c.source_key } })),
-    shortcuts: shortcuts.map((s) => ({ name: s.name, url: s.url, position: s.position })),
+    shortcuts,
     filter: readFilter(db),
     jobs: jobs.map(toExportedJob),
   };
@@ -115,8 +116,8 @@ function importCompanies(db: Database, companies: ExportFile["companies"], now: 
 function importShortcuts(db: Database, shortcuts: ExportFile["shortcuts"]): ImportSummary["shortcuts"] {
   const summary = { added: 0, skipped: 0 };
   const stored = new Set((db.prepare("SELECT url FROM shortcut").all() as { url: string }[]).map((s) => s.url));
-  // Stable sort: file order wherever positions are equal.
-  for (const { name, url } of [...shortcuts].sort((a, b) => a.position - b.position)) {
+  // New Shortcuts go at the end in file order (an export lists them in their order).
+  for (const { name, url } of shortcuts) {
     if (stored.has(url.trim())) {
       summary.skipped++;
       continue;
@@ -132,9 +133,12 @@ function importShortcuts(db: Database, shortcuts: ExportFile["shortcuts"]): Impo
   return summary;
 }
 
+/** "replaced" only when the stored Filter actually changed. */
 function importFilter(db: Database, filter: Filter, choice: FilterChoice): ImportSummary["filter"] {
-  const replace = choice === "replace" || (choice === "auto" && isEmptyFilter(readFilter(db)));
-  if (!replace) return "kept";
+  const stored = readFilter(db);
+  const replace = choice === "replace" || (choice === "auto" && isEmptyFilter(stored));
+  // Both are tidied the same way (parseFilter), with the same key order.
+  if (!replace || JSON.stringify(filter) === JSON.stringify(stored)) return "kept";
   saveFilter(db, filter);
   return "replaced";
 }
@@ -180,7 +184,7 @@ function importJobs(db: Database, jobs: ExportedJob[]): ImportSummary["jobs"] {
 
     const owner = job.source ? companyFollowing(db, job.source) : undefined;
     // Without a followed Company, only Saved and Applied Jobs are kept (as when a Company is removed).
-    if (!owner && (job.status === "unseen" || job.status === "seen")) {
+    if (!owner && isUnseenOrSeen(job.status)) {
       summary.skipped++;
       continue;
     }
@@ -271,8 +275,8 @@ function parseJob(value: unknown, i: number): ExportedJob {
   const jobStatus = status as JobStatus;
   // The same rules as the status table: only Applied carries "was Saved", only Saved and Applied can be Outdated.
   if (wasSaved && jobStatus !== "applied") throw damaged(`${where} (${title}) is marked was Saved without being Applied`);
-  if (outdated && (jobStatus === "unseen" || jobStatus === "seen")) throw damaged(`${where} (${title}) is Outdated but not Saved or Applied`);
-  if (!source && (jobStatus === "unseen" || jobStatus === "seen")) throw damaged(`${where} (${title}) has no Source`);
+  if (outdated && isUnseenOrSeen(jobStatus)) throw damaged(`${where} (${title}) is Outdated but not Saved or Applied`);
+  if (!source && isUnseenOrSeen(jobStatus)) throw damaged(`${where} (${title}) has no Source`);
   return {
     source,
     sourceJobId,

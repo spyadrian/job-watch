@@ -12,7 +12,7 @@ import { KeyboardHelp, KeyboardHelpButton, useKeyboardHelp } from "./keyboard-he
 import { StatusToast, useStatusChanges } from "./job-status.tsx";
 import { RefreshControl, useRefresh } from "./refresh.tsx";
 import { SearchBox } from "./search-box.tsx";
-import { ShortcutsMenu, ShortcutsSection, useShortcuts, useShortcutsMenu } from "./shortcuts.tsx";
+import { ShortcutsMenu, ShortcutsSection, useShortcuts } from "./shortcuts.tsx";
 
 type TabId = "inbox" | "saved" | "applied" | "seen" | "companies";
 
@@ -41,7 +41,9 @@ export function App() {
   const searchRef = useRef<HTMLInputElement>(null);
   const help = useKeyboardHelp();
   const followInputRef = useRef<HTMLInputElement>(null);
-  const shortcutsMenu = useShortcutsMenu();
+  const shortcutsHeadingRef = useRef<HTMLHeadingElement>(null);
+  // The header's Shortcuts menu, also opened by the global `g` key.
+  const [shortcutsMenuOpen, setShortcutsMenuOpen] = useState(false);
   // What to focus once the Companies tab is shown.
   const focusOnCompanies = useRef<(() => void) | null>(null);
 
@@ -63,7 +65,7 @@ export function App() {
   }
 
   function openManageShortcuts() {
-    showOnCompanies(() => document.getElementById("shortcuts-heading")?.focus());
+    showOnCompanies(() => shortcutsHeadingRef.current?.focus());
   }
 
   useGlobalKeys({
@@ -77,8 +79,8 @@ export function App() {
     },
     u: () => status.undo(),
     g: () => {
-      if (shortcuts.shortcuts.length === 0 || shortcutsMenu.open) return false;
-      shortcutsMenu.setOpen(true);
+      if (shortcuts.shortcuts.length === 0 || shortcutsMenuOpen) return false;
+      setShortcutsMenuOpen(true);
     },
     "?": help.open,
   });
@@ -102,7 +104,12 @@ export function App() {
       <header className="app-header">
         <h1 className="brand">Job Watch</h1>
         <RefreshControl refresh={refresh} />
-        <ShortcutsMenu shortcuts={shortcuts.shortcuts} menu={shortcutsMenu} onManage={openManageShortcuts} />
+        <ShortcutsMenu
+          shortcuts={shortcuts.shortcuts}
+          open={shortcutsMenuOpen}
+          setOpen={setShortcutsMenuOpen}
+          onManage={openManageShortcuts}
+        />
         <KeyboardHelpButton onOpen={help.open} />
       </header>
       <nav className="tabs-bar">
@@ -150,7 +157,7 @@ export function App() {
                 inputRef={followInputRef}
               />
               <CompaniesSection state={companies} />
-              <ShortcutsSection state={shortcuts} />
+              <ShortcutsSection state={shortcuts} headingRef={shortcutsHeadingRef} />
               <DataSection
                 filter={filter.filter}
                 onImported={() => {

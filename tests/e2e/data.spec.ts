@@ -57,4 +57,10 @@ test("explains why an invalid file is refused", async ({ page }) => {
     .setInputFiles({ name: "notes.json", mimeType: "application/json", buffer: Buffer.from('{"hello": "world"}') });
 
   await expect(dataSection(page).getByRole("alert")).toHaveText("This file isn't a Job Watch export.");
+
+  await dataSection(page)
+    .getByLabel("Import a file")
+    .setInputFiles({ name: "notes.txt", mimeType: "application/json", buffer: Buffer.from("just some notes") });
+
+  await expect(dataSection(page).getByRole("alert")).toHaveText("This file isn't valid JSON.");
 });

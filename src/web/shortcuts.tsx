@@ -71,41 +71,35 @@ function ShortcutLink({ shortcut, className, onOpen }: { shortcut: Shortcut; cla
   );
 }
 
-/** From this many Shortcuts, the header menu starts with a filter field. */
-const FILTER_FROM = 11;
-
-/** Open state of the header's Shortcuts menu, shared with the global `g` key (see App). */
-export function useShortcutsMenu() {
-  const [open, setOpen] = useState(false);
-  return { open, setOpen };
-}
-
-export type ShortcutsMenuState = ReturnType<typeof useShortcutsMenu>;
+/** From this many Shortcuts, the header menu starts with a search field. */
+const SEARCH_FROM = 11;
 
 /**
  * One header button that opens the Shortcuts: a dropdown on wide screens, a full-width
  * disclosure on narrow ones (CSS). Closes on Esc (focus back to the button), on a click
- * outside, and after opening a Shortcut. Arrow keys move through the filter and the items.
+ * outside, and after opening a Shortcut. Arrow keys move through the search and the items.
+ * While open, the page-wide keys are ignored inside it. `open` is App's, shared with the `g` key.
  */
 export function ShortcutsMenu({
   shortcuts,
-  menu,
+  open,
+  setOpen,
   onManage,
 }: {
   shortcuts: Shortcut[];
-  menu: ShortcutsMenuState;
+  open: boolean;
+  setOpen: (open: boolean) => void;
   onManage: () => void;
 }) {
-  const { open, setOpen } = menu;
   const [query, setQuery] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
-  const filterable = shortcuts.length >= FILTER_FROM;
+  const searchable = shortcuts.length >= SEARCH_FROM;
   const needle = fold(query.trim());
   const shown = needle === "" ? shortcuts : shortcuts.filter((s) => fold(s.name).includes(needle));
 
-  // On open, focus the filter field, or the first Shortcut when there is none.
+  // On open, focus the search field, or the first Shortcut when there is none.
   useEffect(() => {
     if (!open) {
       setQuery("");
@@ -135,7 +129,7 @@ export function ShortcutsMenu({
       return;
     }
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
-    // Home / End stay in the filter field, where they move the caret.
+    // Home / End stay in the search field, where they move the caret.
     if ((e.key === "Home" || e.key === "End") && e.target instanceof HTMLInputElement) return;
     const items = [...(panelRef.current?.querySelectorAll<HTMLElement>("input, a, button") ?? [])];
     if (items.length === 0) return;
@@ -164,13 +158,20 @@ export function ShortcutsMenu({
         Shortcuts<span className="shortcuts-count"> · {shortcuts.length}</span>
         <span className="shortcuts-chevron" aria-hidden="true" />
       </button>
-      <nav ref={panelRef} id="shortcuts-panel" aria-label="Shortcuts" className="shortcuts-panel" hidden={!open}>
-        {filterable && (
+      <nav
+        ref={panelRef}
+        id="shortcuts-panel"
+        aria-label="Shortcuts"
+        className="shortcuts-panel"
+        hidden={!open}
+        data-own-keys=""
+      >
+        {searchable && (
           <input
             type="search"
-            className="shortcuts-filter"
-            aria-label="Filter Shortcuts"
-            placeholder="Filter Shortcuts"
+            className="shortcuts-search"
+            aria-label="Search Shortcuts"
+            placeholder="Search Shortcuts"
             autoComplete="off"
             spellCheck={false}
             value={query}
@@ -203,13 +204,18 @@ export function ShortcutsMenu({
   );
 }
 
-/** The Shortcuts section of the Companies tab: list, add, rename, remove. */
-export function ShortcutsSection({ state }: { state: ShortcutsState }) {
+/** The Shortcuts section of the Companies tab: list, add, rename, remove. `headingRef` lets App focus the heading. */
+export function ShortcutsSection({
+  state,
+  headingRef,
+}: {
+  state: ShortcutsState;
+  headingRef: RefObject<HTMLHeadingElement | null>;
+}) {
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const headingRef = useRef<HTMLHeadingElement>(null);
 
   async function onAdd(e: FormEvent) {
     e.preventDefault();

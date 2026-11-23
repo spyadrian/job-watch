@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import type { AppDeps } from "../app.ts";
-import { exportData, importData, type FilterChoice } from "../data-transfer.ts";
+import { exportData, ImportError, importData, type FilterChoice } from "../data-transfer.ts";
 
 /** Data: export everything to one JSON file, import such a file. */
 export function registerDataRoutes(api: Hono, deps: Pick<AppDeps, "db" | "clock">): void {
@@ -17,7 +17,12 @@ export function registerDataRoutes(api: Hono, deps: Pick<AppDeps, "db" | "clock"
    * file's Filter replaces the stored one; by default only an empty stored Filter is replaced.
    */
   api.post("/import", async (c) => {
-    const body: unknown = await c.req.json().catch(() => null);
+    let body: unknown;
+    try {
+      body = JSON.parse(await c.req.text());
+    } catch {
+      throw new ImportError("This file isn't valid JSON.");
+    }
     const choice = c.req.query("filter");
     const filterChoice: FilterChoice = choice === "replace" || choice === "keep" ? choice : "auto";
     return c.json(importData(body, filterChoice, deps));

@@ -1,13 +1,13 @@
 // The Data section of the Companies tab: export everything to one file, import such a file.
 import { useId, useState, type ChangeEvent } from "react";
+import { isEmptyFilter } from "../shared/filter.ts";
 import type { Filter, ImportSummary } from "../shared/types.ts";
+import { callWithJson } from "./api.ts";
 import { plural } from "./plural.ts";
 
-/** No City filters and no keywords: an import replaces such a Filter by default. */
-const isEmptyFilter = (f: Filter) => f.cities.length + f.required.length + f.boosted.length + f.excluded.length === 0;
-
-/** The import summary in plain English. `filterChanged`: the file's Filter replaced a different one. */
-export function importSummaryText(summary: ImportSummary, filterChanged: boolean): string {
+/** The import summary in plain English. The server says "replaced" only when the Filter changed. */
+function importSummaryText(summary: ImportSummary): string {
+  const filterChanged = summary.filter === "replaced";
   const added = [
     summary.companies.added > 0 && `${summary.companies.added} ${summary.companies.added === 1 ? "Company" : "Companies"}`,
     summary.shortcuts.added > 0 && plural(summary.shortcuts.added, "Shortcut"),
@@ -46,15 +46,8 @@ export function DataSection({ filter, onImported }: { filter: Filter; onImported
     setSummary("");
     setError(null);
     try {
-      const text = await file.text();
-      const res = await fetch(`/api/import?filter=${replaceFilter ? "replace" : "keep"}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: text,
-      });
-      const data = (await res.json().catch(() => ({}))) as ImportSummary & { error?: string };
-      if (!res.ok) throw new Error(data.error ?? `Import failed (${res.status}).`);
-      setSummary(importSummaryText(data, data.filter === "replaced" && filterDiffers(text, filter)));
+      const path = `/api/import?filter=${replaceFilter ? "replace" : "keep"}`;
+      setSummary(importSummaryText(await callWithJson<ImportSummary>("POST", path, await file.text())));
       onImported();
     } catch (err) {
       setError((err as Error).message);
@@ -95,14 +88,4 @@ export function DataSection({ filter, onImported }: { filter: Filter; onImported
       )}
     </section>
   );
-}
-
-/** Whether the file's Filter differs from the current one (false when it can't be read). */
-function filterDiffers(fileText: string, current: Filter): boolean {
-  try {
-    const { filter } = JSON.parse(fileText) as { filter?: Filter };
-    return JSON.stringify(filter) !== JSON.stringify(current);
-  } catch {
-    return false;
-  }
 }

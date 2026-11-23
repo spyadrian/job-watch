@@ -51,8 +51,3 @@ function isWordList(value: unknown): value is string[] {
 function clean(words: string[]): string[] {
   return words.map((w) => w.trim()).filter((w) => w !== "");
 }
-
-/** No City filters and no keywords: what a first start has. */
-export function isEmptyFilter(filter: Filter): boolean {
-  return filter.cities.length + filter.required.length + filter.boosted.length + filter.excluded.length === 0;
-}
