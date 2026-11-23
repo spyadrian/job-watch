@@ -46,7 +46,7 @@ npm run dev:web
 
 ## Moving your data
 
-The **Data** section of the Companies tab saves everything Job Watch knows to one file and loads such a file into any instance: Docker, `npm start`, another machine, or a backup.
+The **Data** section of the Companies tab saves your Companies, Shortcuts, Filter and Job statuses to one file and loads such a file into any instance: Docker, `npm start`, another machine, or a backup.
 
 - **Export** downloads `job-watch-YYYY-MM-DD.json`: your Companies, Shortcuts, Filter, and every Job you dealt with (Seen, Saved, Applied, including the Saved and Applied Jobs of Companies you removed). Unseen Jobs are left out: the next Refresh reads them again.
 - **Import a file** merges it with what is already there: it follows the Companies you don't follow yet, adds the Shortcuts whose link is new, and moves each Job's status forward (never back). Importing the same file twice adds nothing. Choose whether the file's Filter replaces yours (by default only if yours is empty). Import reads no Source, so it is quick and works offline; Refresh afterwards to read the new Companies' Jobs.

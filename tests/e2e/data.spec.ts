@@ -20,6 +20,11 @@ test("exports all data to a dated file and imports it back with a summary in pla
   await page.goto("/");
   await tab(page, "Companies").click();
 
+  // The hint says what Export saves, and that Unseen Jobs are left out.
+  await expect(dataSection(page).locator(".hint")).toHaveText(
+    "Save your Companies, Shortcuts, Filter and Job statuses to one file (Unseen Jobs are left out: the next Refresh reads them again), or load such a file here to merge it with what you already have.",
+  );
+
   // Export downloads one JSON file named after today's date.
   const downloadPromise = page.waitForEvent("download");
   await dataSection(page).getByRole("link", { name: "Export" }).click();
