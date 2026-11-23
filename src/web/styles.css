@@ -242,23 +242,43 @@ body {
   margin: 6px 8px;
 }
 
-.shortcuts-manage {
+.shortcuts-footer {
   flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 8px;
   margin-top: 6px;
-  padding: 8px 8px 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.shortcuts-manage,
+.shortcuts-open-all {
+  padding: 4px 8px;
   font: inherit;
   font-size: 0.85rem;
   text-align: left;
   color: var(--muted);
   background: none;
   border: 0;
-  border-top: 1px solid var(--border);
   cursor: pointer;
 }
 
-.shortcuts-manage:hover {
+.shortcuts-open-all {
+  color: var(--accent);
+}
+
+.shortcuts-manage:hover,
+.shortcuts-open-all:hover {
   color: var(--text);
   text-decoration: underline;
+}
+
+.shortcuts-blocked {
+  flex: none;
+  margin: 6px 8px 2px;
+  font-size: 0.85rem;
 }
 
 @media (max-width: 560px) {

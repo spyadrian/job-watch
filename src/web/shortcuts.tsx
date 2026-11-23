@@ -71,6 +71,22 @@ function ShortcutLink({ shortcut, className, onOpen }: { shortcut: Shortcut; cla
   );
 }
 
+/**
+ * Opens each link in a new tab, in order. Returns false when the browser blocked any of them.
+ * Chromium and Firefox let one click open one tab unless pop-ups are allowed for the site, and
+ * `window.open` returns null for each blocked tab. With the "noopener" feature it returns null
+ * even when the tab opens, so the tab is opened without it and cut off from Job Watch after.
+ */
+function openInNewTabs(urls: string[]): boolean {
+  let allOpened = true;
+  for (const url of urls) {
+    const tab = window.open(url, "_blank");
+    if (tab) tab.opener = null;
+    else allOpened = false;
+  }
+  return allOpened;
+}
+
 /** From this many Shortcuts, the header menu starts with a search field. */
 const SEARCH_FROM = 11;
 
@@ -92,6 +108,7 @@ export function ShortcutsMenu({
   onManage: () => void;
 }) {
   const [query, setQuery] = useState("");
+  const [blocked, setBlocked] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
@@ -103,6 +120,7 @@ export function ShortcutsMenu({
   useEffect(() => {
     if (!open) {
       setQuery("");
+      setBlocked(false);
       return;
     }
     panelRef.current?.querySelector<HTMLElement>("input, a")?.focus();
@@ -119,6 +137,11 @@ export function ShortcutsMenu({
   }, [open, setOpen]);
 
   if (shortcuts.length === 0) return null;
+
+  function openAll() {
+    if (openInNewTabs(shown.map((s) => s.url))) setOpen(false);
+    else setBlocked(true);
+  }
 
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     if (!open) return;
@@ -189,16 +212,30 @@ export function ShortcutsMenu({
             ))}
           </ul>
         )}
-        <button
-          type="button"
-          className="shortcuts-manage"
-          onClick={() => {
-            setOpen(false);
-            onManage();
-          }}
-        >
-          Manage Shortcuts
-        </button>
+        <div role="status">
+          {blocked && (
+            <p className="error shortcuts-blocked">
+              Your browser blocked some tabs. Allow pop-ups for this site, then try again.
+            </p>
+          )}
+        </div>
+        <div className="shortcuts-footer">
+          <button
+            type="button"
+            className="shortcuts-manage"
+            onClick={() => {
+              setOpen(false);
+              onManage();
+            }}
+          >
+            Manage Shortcuts
+          </button>
+          {shown.length > 0 && (
+            <button type="button" className="shortcuts-open-all" onClick={openAll}>
+              Open all {shown.length}
+            </button>
+          )}
+        </div>
       </nav>
     </div>
   );

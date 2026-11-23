@@ -247,3 +247,93 @@ test("no Shortcuts: no Shortcuts button", async ({ page }) => {
   await expect(page.getByRole("tab", { name: /Inbox/ })).toBeVisible();
   await expect(menuButton(page)).toHaveCount(0);
 });
+
+const tenMore = [
+  "Genève Emploi",
+  "Lausanne Jobs",
+  "Zurich Careers",
+  "Basel Work",
+  "Bern Jobs",
+  "Lugano Lavoro",
+  "Sion Emplois",
+  "Fribourg Jobs",
+  "Neuchâtel Emploi",
+  "Valais Jobs",
+];
+
+test("Open all carries the count of the listed Shortcuts and follows the search", async ({ page }) => {
+  await addShortcuts(page, tenMore);
+  await page.goto("/");
+  await openMenu(page);
+  const openAll = menu(page).getByRole("button", { name: /^Open all/ });
+  await expect(openAll).toHaveText("Open all 12");
+
+  const search = menu(page).getByRole("searchbox", { name: "Search Shortcuts" });
+  await search.fill("emploi");
+  await expect(openAll).toHaveText("Open all 3");
+  await search.fill("nothing like this");
+  await expect(openAll).toHaveCount(0);
+});
+
+test("Open all opens each listed Shortcut in a new tab, in order, from the keyboard, and closes the menu", async ({
+  page,
+  context,
+}) => {
+  await context.route("https://**.example/**", (route) => route.fulfill({ body: "Careers" }));
+  await addShortcuts(page, tenMore);
+  await page.goto("/");
+  await openMenu(page);
+  await menu(page).getByRole("searchbox", { name: "Search Shortcuts" }).fill("emploi");
+
+  const opened: string[] = [];
+  context.on("page", (p) => opened.push(p.url()));
+  await menu(page).getByRole("button", { name: "Open all 3" }).focus();
+  await page.keyboard.press("Enter");
+
+  await expect.poll(() => opened.length).toBe(3);
+  await expect(menu(page)).toBeHidden();
+  const pages = context.pages().slice(1);
+  await Promise.all(pages.map((p) => p.waitForURL(/example/)));
+  expect(pages.map((p) => p.url())).toEqual([
+    "https://gen-ve-emploi.example/jobs",
+    "https://sion-emplois.example/jobs",
+    "https://neuch-tel-emploi.example/jobs",
+  ]);
+  // The new tabs can't reach back into Job Watch.
+  expect(await pages[0]!.evaluate(() => window.opener)).toBeNull();
+});
+
+test("on a narrow screen, Space on Open all opens the Shortcuts too", async ({ page, context }) => {
+  await context.route("https://www.jobup.ch/**", (route) => route.fulfill({ body: "Jobup" }));
+  await context.route("https://**.indeed.com/**", (route) => route.fulfill({ body: "Indeed" }));
+  await page.setViewportSize({ width: 400, height: 700 });
+  await page.goto("/");
+  await openMenu(page);
+  const opened: string[] = [];
+  context.on("page", (p) => opened.push(p.url()));
+  await menu(page).getByRole("button", { name: "Open all 2" }).focus();
+  await page.keyboard.press(" ");
+  await expect.poll(() => opened.length).toBe(2);
+  await expect(menu(page)).toBeHidden();
+});
+
+test("when the browser blocks pop-ups, Open all says so in the panel and stays open", async ({ page }) => {
+  // Like Chromium and Firefox with their pop-up blocker on: one tab per click, the rest return null.
+  await page.addInitScript(() => {
+    let calls = 0;
+    window.open = () => (calls++ === 0 ? ({ opener: window } as unknown as Window) : null);
+  });
+  await page.goto("/");
+  await openMenu(page);
+  await menu(page).getByRole("button", { name: "Open all 2" }).click();
+  await expect(menu(page)).toBeVisible();
+  await expect(menu(page).getByRole("status")).toHaveText(
+    "Your browser blocked some tabs. Allow pop-ups for this site, then try again.",
+  );
+  await expect(page.getByRole("dialog")).toBeHidden();
+
+  // The message goes when the menu closes.
+  await page.keyboard.press("Escape");
+  await openMenu(page);
+  await expect(menu(page).getByRole("status")).toBeEmpty();
+});
