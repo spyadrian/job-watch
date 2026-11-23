@@ -61,7 +61,7 @@ export function DataSection({ filter, onImported }: { filter: Filter; onImported
     <section aria-labelledby={`${ids}-heading`} className="managed-section data-section">
       <h2 id={`${ids}-heading`}>Data</h2>
       <p className="hint">
-        Save everything Job Watch knows to one file, or load such a file here to merge it with what is already here.
+        Save your Companies, Shortcuts, Filter and Job statuses to one file (Unseen Jobs are left out: the next Refresh reads them again), or load such a file here to merge it with what you already have.
       </p>
       <p>
         <a href="/api/export" download className="button-link">
