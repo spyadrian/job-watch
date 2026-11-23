@@ -86,6 +86,7 @@ test("offers a Shortcut, prefilled with the name and link, when nothing is found
   await expect(section.getByLabel("Shortcut link")).toHaveValue("https://www.initech.example/careers");
   await section.getByRole("button", { name: "Add as a Shortcut" }).click();
   await expect(section).toContainText("Added Initech to your Shortcuts.");
+  await page.getByRole("banner").getByRole("button", { name: /^Shortcuts/ }).click();
   await expect(page.getByRole("navigation", { name: "Shortcuts" }).getByRole("link", { name: /Initech/ })).toHaveAttribute(
     "href",
     "https://www.initech.example/careers",
