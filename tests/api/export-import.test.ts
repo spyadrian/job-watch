@@ -234,6 +234,19 @@ describe("importing into an instance that already has data", () => {
     expect((await to.shortcuts()).map((s) => s.name)).toEqual(["Jobup", "Indeed Switzerland", "Mine", "Acme careers"]);
   });
 
+  it("adds new Shortcuts in file order, whatever their positions say", async () => {
+    const file = (await setup().exportData()) as any;
+    file.shortcuts = [
+      { name: "Zeta", url: "https://zeta.example", position: 9 },
+      { name: "Alpha", url: "https://alpha.example", position: 1 },
+    ];
+    const to = setup();
+
+    await to.importData(file);
+
+    expect((await to.shortcuts()).map((s) => s.name)).toEqual(["Jobup", "Indeed Switzerland", "Zeta", "Alpha"]);
+  });
+
   it("moves a stored Job's status forward but never back", async () => {
     const file = await (await populated()).exportData();
     const to = setup();
@@ -277,6 +290,22 @@ describe("importing into an instance that already has data", () => {
     expect(await to.filter()).toEqual(geneva);
   });
 
+  it("reports the Filter kept when the file's is the same once tidied", async () => {
+    const file = (await (await populated()).exportData()) as any;
+    const to = setup();
+    await to.request("PUT", "/api/filter", geneva);
+    const untidy = { ...geneva, required: [" engineer ", ""], cities: [...geneva.cities, []] };
+
+    expect((await to.importData({ ...file, filter: untidy }, "?filter=replace")).body.filter).toBe("kept");
+    expect(await to.filter()).toEqual(geneva);
+  });
+
+  it("reports an empty Filter kept when the file's is empty too", async () => {
+    const file = await setup().exportData();
+
+    expect((await setup().importData(file)).body.filter).toBe("kept");
+  });
+
   it("keeps the Filter when asked to, even if empty", async () => {
     const file = await (await populated()).exportData();
     const to = setup();
@@ -301,7 +330,7 @@ describe("an invalid file", () => {
   }
 
   it("is refused when it isn't JSON", async () => {
-    await refused("not json {", /isn't a Job Watch export/i, true);
+    await refused("not json {", /isn't valid JSON/i, true);
   });
 
   it("is refused when it isn't a Job Watch export", async () => {

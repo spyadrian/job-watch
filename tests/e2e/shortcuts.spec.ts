@@ -88,7 +88,7 @@ test("the header shows one Shortcuts button that opens a dropdown, and opening a
   const panelId = await button.getAttribute("aria-controls");
   expect(panelId).toBeTruthy();
   await expect(page.locator(`[id="${panelId}"]`)).toBeVisible();
-  // Few Shortcuts: no filter field.
+  // Few Shortcuts: no search field.
   await expect(menu(page).getByRole("searchbox")).toHaveCount(0);
   await expect(menu(page).getByRole("link")).toHaveText([/Jobup/, /Indeed Switzerland/]);
 
@@ -118,7 +118,7 @@ test("a click outside closes the menu, and Manage Shortcuts goes to the Companie
   await expect(page.getByRole("heading", { name: "Shortcuts" })).toBeFocused();
 });
 
-test("many Shortcuts: a filter field ignoring case and accents, arrow keys, Enter opens, Esc closes", async ({
+test("many Shortcuts: a search field ignoring case and accents, arrow keys, Enter opens, Esc closes", async ({
   page,
   context,
 }) => {
@@ -140,29 +140,29 @@ test("many Shortcuts: a filter field ignoring case and accents, arrow keys, Ente
   const button = menuButton(page);
   await expect(button).toHaveAccessibleName("Shortcuts · 12");
 
-  // g opens the menu from anywhere; the filter field has focus.
+  // g opens the menu from anywhere; the search field has focus.
   await page.keyboard.press("g");
-  const filter = menu(page).getByRole("searchbox", { name: "Filter Shortcuts" });
-  await expect(filter).toBeFocused();
+  const search = menu(page).getByRole("searchbox", { name: "Search Shortcuts" });
+  await expect(search).toBeFocused();
   await expect(menu(page).getByRole("link")).toHaveCount(12);
 
   // Typing never triggers the app's keys (j, k, e, s, a, u, /, ?, g).
   await page.keyboard.type("jksaeu/?g");
-  await expect(filter).toHaveValue("jksaeu/?g");
+  await expect(search).toHaveValue("jksaeu/?g");
   await expect(page.getByRole("dialog")).toBeHidden();
-  await filter.fill("");
+  await search.fill("");
 
   await page.keyboard.type("GENEVE");
   await expect(menu(page).getByRole("link")).toHaveText([/Genève Emploi/]);
-  await filter.fill("emploi");
+  await search.fill("emploi");
   await expect(menu(page).getByRole("link")).toHaveText([/Genève Emploi/, /Sion Emplois/, /Neuchâtel Emploi/]);
-  await filter.fill("nothing like this");
+  await search.fill("nothing like this");
   await expect(menu(page)).toContainText("No Shortcut matches");
-  await filter.fill("chatel");
+  await search.fill("chatel");
   await expect(menu(page).getByRole("link")).toHaveText([/Neuchâtel Emploi/]);
 
   // Arrow keys move through the items; Enter opens the focused one in a new tab and closes the menu.
-  await filter.fill("jobs");
+  await search.fill("jobs");
   await page.keyboard.press("ArrowDown");
   await expect(menu(page).getByRole("link", { name: /Lausanne Jobs/ })).toBeFocused();
   await page.keyboard.press("ArrowDown");
@@ -173,11 +173,11 @@ test("many Shortcuts: a filter field ignoring case and accents, arrow keys, Ente
   await expect(opened).toHaveURL("https://lausanne-jobs.example/jobs");
   await expect(menu(page)).toBeHidden();
 
-  // Reopened, the filter starts empty; Esc closes and gives focus back to the button.
+  // Reopened, the search starts empty; Esc closes and gives focus back to the button.
   await page.bringToFront();
   await button.click();
-  await expect(filter).toBeFocused();
-  await expect(filter).toHaveValue("");
+  await expect(search).toBeFocused();
+  await expect(search).toHaveValue("");
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Escape");
   await expect(menu(page)).toBeHidden();
@@ -191,6 +191,30 @@ test("many Shortcuts: a filter field ignoring case and accents, arrow keys, Ente
   expect(scrolls).toBe(true);
   const panelBox = (await menu(page).boundingBox())!;
   expect(panelBox.y + panelBox.height).toBeLessThanOrEqual(400);
+});
+
+test("while the menu is open, the Job list's keys do nothing", async ({ page }) => {
+  const res = await page.request.post("/api/companies", { data: { source: { type: "greenhouse", key: "acme" }, name: "Acme" } });
+  expect(res.status()).toBe(201);
+  await page.goto("/");
+  const tab = (name: string) => page.getByRole("tab", { name: new RegExp(`^${name}`) });
+  const selected = page.getByRole("tabpanel").locator('[aria-current="true"]');
+  await expect(page.getByRole("tabpanel").getByRole("listitem")).toHaveCount(3);
+  await page.keyboard.press("j");
+  await page.keyboard.press("e");
+  await expect(tab("Seen")).toHaveAccessibleName("Seen 1");
+  const selectedTitle = await selected.locator(".job-title").innerText();
+
+  await page.keyboard.press("g");
+  const jobup = menu(page).getByRole("link", { name: /Jobup/ });
+  await expect(jobup).toBeFocused();
+  for (const key of ["j", "k", "e", "s", "a", "u", "/"]) await page.keyboard.press(key);
+
+  await expect(jobup).toBeFocused();
+  await expect(selected.locator(".job-title")).toHaveText(selectedTitle);
+  for (const [name, n] of Object.entries({ Inbox: 2, Seen: 1, Saved: 0, Applied: 0 })) {
+    await expect(tab(name)).toHaveAccessibleName(`${name} ${n}`);
+  }
 });
 
 test("g is listed in the keyboard help", async ({ page }) => {
