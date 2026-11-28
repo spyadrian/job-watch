@@ -121,3 +121,45 @@ describe("Mark all as seen", () => {
     },
   );
 });
+
+describe("Undo Mark all as seen", () => {
+  async function setup() {
+    const app = createTestApp({ sources: acme });
+    expect(
+      (await app.request("POST", "/api/companies", { source: { type: "greenhouse", key: "acme" }, name: "Acme" })).status,
+    ).toBe(201);
+    const listJobs = async () => ((await (await app.request("GET", "/api/jobs")).json()) as { jobs: Job[] }).jobs;
+    const ids = (await listJobs()).map((j) => j.id);
+    expect((await app.request("POST", "/api/jobs/seen", { ids })).status).toBe(200);
+    return { ...app, listJobs, ids };
+  }
+
+  it("puts the given Jobs that are still Seen back to Unseen, skipping the ones moved since", async () => {
+    const t = await setup();
+    const [a, b, c] = t.ids as [number, number, number];
+    expect((await t.request("POST", `/api/jobs/${b}/status`, { action: "save" })).status).toBe(200);
+
+    const res = await t.request("POST", "/api/jobs/unseen", { ids: [a, b, c, 9999] });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { jobs: Job[] };
+    expect(body.jobs.map((j) => [j.id, j.status])).toEqual([
+      [a, "unseen"],
+      [c, "unseen"],
+    ]);
+    const statuses = Object.fromEntries((await t.listJobs()).map((j) => [j.id, j.status]));
+    expect(statuses).toEqual({ [a]: "unseen", [b]: "saved", [c]: "unseen" });
+  });
+
+  it.each([["no body", undefined], ["ids not a list", { ids: 3 }], ["ids not numbers", { ids: ["1"] }]])(
+    "refuses %s",
+    async (_, body) => {
+      const t = await setup();
+
+      const res = await t.request("POST", "/api/jobs/unseen", body);
+
+      expect(res.status).toBe(400);
+      expect((await t.listJobs()).every((j) => j.status === "seen")).toBe(true);
+    },
+  );
+});

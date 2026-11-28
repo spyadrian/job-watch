@@ -81,6 +81,32 @@ test("the Inbox header counts its Jobs, and an Inbox with every Job triaged is c
   await expect(page.getByText(/hidden by your Filter/)).toHaveCount(0);
 });
 
+test("Mark all as seen can be undone with the toast's Undo, and with u after the toast is gone", async ({ page }) => {
+  await followAcme(page);
+  await page.goto("/");
+  const inbox = page.getByRole("tabpanel").getByRole("listitem");
+  const titles = await inbox.allTextContents();
+  expect(titles).toHaveLength(3);
+
+  await page.getByRole("button", { name: "Mark all as seen" }).click();
+  await expectCounts(page, { Inbox: 0, Seen: 3 });
+  await expect(toast(page)).toContainText("Marked 3 Jobs as seen");
+
+  // Undo in the toast brings them all back to the Inbox, in their usual order.
+  await toast(page).getByRole("button", { name: "Undo" }).click();
+  await expectCounts(page, { Inbox: 3, Seen: 0 });
+  await expect(toast(page)).toContainText("Moved 3 Jobs back to the Inbox");
+  await expect(inbox).toHaveText(titles);
+
+  // u undoes it too, after the toast has disappeared.
+  await page.getByRole("button", { name: "Mark all as seen" }).click();
+  await expectCounts(page, { Inbox: 0, Seen: 3 });
+  await expect(toast(page)).toHaveCount(0, { timeout: 10_000 });
+  await page.keyboard.press("u");
+  await expectCounts(page, { Inbox: 3, Seen: 0 });
+  await expect(toast(page)).toContainText("Moved 3 Jobs back to the Inbox");
+});
+
 test("the toast floats over the list without changing the layout, and the list stays reachable", async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 600 });
   const res = await page.request.post("/api/companies", {
