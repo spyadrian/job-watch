@@ -386,6 +386,25 @@ body {
   min-width: 0;
 }
 
+/* An edit form with labelled fields (Shortcuts: Name and Link). */
+.managed-edit {
+  flex-wrap: wrap;
+  align-items: end;
+}
+
+.managed-edit label {
+  display: flex;
+  flex: 1 1 12rem;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 0.85rem;
+}
+
+.managed-edit label input {
+  flex: none;
+}
+
 .shortcut-add {
   display: flex;
   flex-wrap: wrap;

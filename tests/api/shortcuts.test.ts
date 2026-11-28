@@ -78,6 +78,80 @@ describe("Shortcuts API", () => {
     expect(list.shortcuts.map((s: { name: string }) => s.name)).toEqual(["jobup.ch", "Indeed Switzerland"]);
   });
 
+  it("changes a Shortcut's link and keeps its name and place", async () => {
+    const { request } = createTestApp();
+    const [jobup] = (await (await request("GET", "/api/shortcuts")).json()).shortcuts;
+
+    const res = await request("PATCH", `/api/shortcuts/${jobup.id}`, { url: " https://www.jobup.ch/en/jobs " });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      shortcut: { id: jobup.id, name: "Jobup", url: "https://www.jobup.ch/en/jobs" },
+    });
+    const list = await (await request("GET", "/api/shortcuts")).json();
+    expect(list.shortcuts.map((s: { url: string }) => s.url)).toEqual([
+      "https://www.jobup.ch/en/jobs",
+      "https://ch.indeed.com",
+    ]);
+  });
+
+  it("changes a Shortcut's name and link together", async () => {
+    const { request } = createTestApp();
+    const [jobup] = (await (await request("GET", "/api/shortcuts")).json()).shortcuts;
+
+    const res = await request("PATCH", `/api/shortcuts/${jobup.id}`, {
+      name: "Jobup jobs",
+      url: "http://jobup.example/jobs",
+    });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      shortcut: { id: jobup.id, name: "Jobup jobs", url: "http://jobup.example/jobs" },
+    });
+  });
+
+  it.each([
+    ["not a link", "jobup careers"],
+    ["a non-web link", "ftp://jobup.example/jobs"],
+    ["an empty link", "  "],
+  ])("refuses %s as a new link and changes nothing", async (_label, url) => {
+    const { request } = createTestApp();
+    const [jobup] = (await (await request("GET", "/api/shortcuts")).json()).shortcuts;
+
+    const res = await request("PATCH", `/api/shortcuts/${jobup.id}`, { name: "Jobup jobs", url });
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: "Enter a valid web link, starting with https:// or http://.",
+    });
+    const list = await (await request("GET", "/api/shortcuts")).json();
+    expect(list.shortcuts[0]).toEqual({ id: jobup.id, name: "Jobup", url: "https://www.jobup.ch" });
+  });
+
+  it("refuses a blank new name with a new link and changes nothing", async () => {
+    const { request } = createTestApp();
+    const [jobup] = (await (await request("GET", "/api/shortcuts")).json()).shortcuts;
+
+    const res = await request("PATCH", `/api/shortcuts/${jobup.id}`, { name: "  ", url: "https://jobup.example" });
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Give the Shortcut a name." });
+    const list = await (await request("GET", "/api/shortcuts")).json();
+    expect(list.shortcuts[0]).toEqual({ id: jobup.id, name: "Jobup", url: "https://www.jobup.ch" });
+  });
+
+  it("refuses an update with neither a name nor a link", async () => {
+    const { request } = createTestApp();
+    const [jobup] = (await (await request("GET", "/api/shortcuts")).json()).shortcuts;
+
+    const res = await request("PATCH", `/api/shortcuts/${jobup.id}`, {});
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: expect.any(String) });
+    const list = await (await request("GET", "/api/shortcuts")).json();
+    expect(list.shortcuts[0]).toEqual({ id: jobup.id, name: "Jobup", url: "https://www.jobup.ch" });
+  });
+
   it("refuses an empty new name", async () => {
     const { request } = createTestApp();
     const [jobup] = (await (await request("GET", "/api/shortcuts")).json()).shortcuts;
