@@ -20,8 +20,7 @@ export function listShortcuts(db: Database): Shortcut[] {
 /** Adds a Shortcut at the end of the list. Throws RequestError (400) on a blank name or a link that isn't http(s). */
 export function addShortcut(db: Database, rawName: unknown, rawUrl: unknown): Shortcut {
   const name = parseName(rawName);
-  const url = parseUrl(rawUrl);
-  if (!url) throw new RequestError("Enter a valid web link, starting with https:// or http://.", 400);
+  const url = requireUrl(rawUrl);
   const row = db
     .prepare(
       `INSERT INTO shortcut (name, url, position)
@@ -32,11 +31,22 @@ export function addShortcut(db: Database, rawName: unknown, rawUrl: unknown): Sh
   return toShortcut(row);
 }
 
-export function renameShortcut(db: Database, id: number, rawName: unknown): Shortcut {
-  const name = parseName(rawName);
-  const row = db.prepare("UPDATE shortcut SET name = ? WHERE id = ? RETURNING id, name, url").get(name, id) as unknown as
-    | Shortcut
-    | undefined;
+/**
+ * Changes a Shortcut's name, its link, or both; it keeps its place. Throws RequestError (400) when
+ * neither is given, on a blank name or a link that isn't http(s), and 404 for an unknown id.
+ */
+export function updateShortcut(db: Database, id: number, changes: { name?: unknown; url?: unknown }): Shortcut {
+  if (changes.name === undefined && changes.url === undefined) {
+    throw new RequestError("Give the Shortcut a new name or link.", 400);
+  }
+  const name = changes.name === undefined ? null : parseName(changes.name);
+  const url = changes.url === undefined ? null : requireUrl(changes.url);
+  const row = db
+    .prepare(
+      `UPDATE shortcut SET name = COALESCE(?, name), url = COALESCE(?, url)
+       WHERE id = ? RETURNING id, name, url`,
+    )
+    .get(name, url, id) as unknown as Shortcut | undefined;
   if (!row) throw new ShortcutNotFoundError();
   return toShortcut(row);
 }
@@ -54,6 +64,12 @@ function parseName(value: unknown): string {
   const name = typeof value === "string" ? value.trim() : "";
   if (!name) throw new RequestError("Give the Shortcut a name.", 400);
   return name;
+}
+
+function requireUrl(value: unknown): string {
+  const url = parseUrl(value);
+  if (!url) throw new RequestError("Enter a valid web link, starting with https:// or http://.", 400);
+  return url;
 }
 
 /** An absolute http(s) link, or null. */

@@ -19,7 +19,10 @@ async function addShortcuts(page: Page, names: string[]) {
   }
 }
 
-test("manages Shortcuts in the Companies tab and opens them in a new tab from the header menu", async ({ page }) => {
+test("manages Shortcuts in the Companies tab and opens them in a new tab from the header menu", async ({
+  page,
+  context,
+}) => {
   await page.goto("/");
 
   const header = await openMenu(page);
@@ -47,19 +50,52 @@ test("manages Shortcuts in the Companies tab and opens them in a new tab from th
   await expect(header.getByRole("link", { name: /Acme careers/ })).toBeVisible();
   await page.keyboard.press("Escape");
 
-  // Rename: Cancel keeps the old name, Save applies the new one.
-  await section.getByRole("button", { name: "Rename Acme careers" }).click();
-  await section.getByLabel("New name for Acme careers").fill("Ignored");
-  await section.getByRole("button", { name: "Cancel" }).click();
-  await expect(added).toBeVisible();
+  // Edit: Cancel keeps the old name and link, Save applies the new ones.
+  await expect(section.getByRole("button", { name: /^Rename/ })).toHaveCount(0);
+  const edit = section.getByRole("button", { name: "Edit Acme careers" });
+  await edit.click();
+  const row = section.getByRole("listitem").filter({ has: page.getByRole("button", { name: "Save", exact: true }) });
+  const editName = row.getByLabel("Name", { exact: true });
+  const editLink = row.getByLabel("Link", { exact: true });
+  await expect(editName).toHaveValue("Acme careers");
+  await expect(editLink).toHaveValue("https://careers.acme.example/jobs");
+  await expect(editLink).toHaveAttribute("type", "url");
+  await editName.fill("Ignored");
+  await editLink.fill("https://ignored.example");
+  await row.getByRole("button", { name: "Cancel" }).click();
+  await expect(added).toHaveAttribute("href", "https://careers.acme.example/jobs");
+  await expect(edit).toBeFocused();
 
-  await section.getByRole("button", { name: "Rename Acme careers" }).click();
-  await section.getByLabel("New name for Acme careers").fill("Acme jobs");
-  await section.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(section.getByRole("link", { name: /Acme jobs/ })).toBeVisible();
-  await openMenu(page);
-  await expect(header.getByRole("link", { name: /Acme jobs/ })).toBeVisible();
+  // Esc cancels too.
+  await edit.click();
+  await expect(editName).toBeVisible();
   await page.keyboard.press("Escape");
+  await expect(edit).toBeFocused();
+
+  // An invalid link is refused in the row, and nothing changes.
+  await edit.click();
+  await editLink.fill("acme careers");
+  await row.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(row.getByRole("alert")).toHaveText("Enter a valid web link, starting with https:// or http://.");
+  await expect(editLink).toHaveAttribute("aria-invalid", "true");
+  await row.getByRole("button", { name: "Cancel" }).click();
+  await expect(added).toHaveAttribute("href", "https://careers.acme.example/jobs");
+
+  await edit.click();
+  await editName.fill("Acme jobs");
+  await editLink.fill("https://jobs.acme.example/");
+  await row.getByRole("button", { name: "Save", exact: true }).click();
+  const edited = section.getByRole("link", { name: /Acme jobs/ });
+  await expect(edited).toHaveAttribute("href", "https://jobs.acme.example/");
+  await expect(section.getByRole("button", { name: "Edit Acme jobs" })).toBeFocused();
+  // It keeps its place at the end of the list.
+  await expect(section.getByRole("list").getByRole("link")).toHaveText([/Jobup/, /Indeed Switzerland/, /Acme jobs/]);
+  await context.route("https://jobs.acme.example/**", (route) => route.fulfill({ body: "Acme" }));
+  await openMenu(page);
+  const [opened] = await Promise.all([context.waitForEvent("page"), header.getByRole("link", { name: /Acme jobs/ }).click()]);
+  await expect(opened).toHaveURL("https://jobs.acme.example/");
+  await opened.close();
+  await page.bringToFront();
 
   // Remove.
   await section.getByRole("button", { name: "Remove Acme jobs" }).click();

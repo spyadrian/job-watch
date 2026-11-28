@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
 import type { CompaniesResponse, Company, CompanyError } from "../shared/types.ts";
 import { call } from "./api.ts";
 import { cappedCount, NarrowingTip } from "./capped-read.tsx";
-import { ManagedRow } from "./managed-row.tsx";
+import { ManagedRow, renameAction } from "./managed-row.tsx";
 import { timeAgo } from "./time-ago.ts";
 
 export interface CompaniesState {
@@ -119,7 +119,7 @@ function CompanyRow({
   return (
     <ManagedRow
       name={company.name}
-      onRename={(name) => state.rename(company.id, name)}
+      edit={renameAction(company.name, (name) => state.rename(company.id, name))}
       onRemove={() => state.remove(company.id)}
       afterRemoveFocus={afterRemoveFocus}
     >

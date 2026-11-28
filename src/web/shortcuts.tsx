@@ -19,7 +19,8 @@ export interface ShortcutsState {
   /** Loads the list again, e.g. after an import. */
   reload(): void;
   add(name: string, url: string): Promise<void>;
-  rename(id: number, name: string): Promise<void>;
+  /** Changes a Shortcut's name and link; it keeps its place. */
+  update(id: number, changes: { name: string; url: string }): Promise<void>;
   remove(id: number): Promise<void>;
 }
 
@@ -49,8 +50,8 @@ export function useShortcuts(): ShortcutsState {
     setShortcuts((list) => [...list, shortcut]);
   }, []);
 
-  const rename = useCallback(async (id: number, name: string) => {
-    const { shortcut } = await call<{ shortcut: Shortcut }>("PATCH", `/api/shortcuts/${id}`, { name });
+  const update = useCallback(async (id: number, changes: { name: string; url: string }) => {
+    const { shortcut } = await call<{ shortcut: Shortcut }>("PATCH", `/api/shortcuts/${id}`, changes);
     setShortcuts((list) => list.map((s) => (s.id === id ? shortcut : s)));
   }, []);
 
@@ -59,7 +60,7 @@ export function useShortcuts(): ShortcutsState {
     setShortcuts((list) => list.filter((s) => s.id !== id));
   }, []);
 
-  return { shortcuts, loadError, reload, add, rename, remove };
+  return { shortcuts, loadError, reload, add, update, remove };
 }
 
 function ShortcutLink({ shortcut, className, onOpen }: { shortcut: Shortcut; className?: string; onOpen?: () => void }) {
@@ -241,7 +242,7 @@ export function ShortcutsMenu({
   );
 }
 
-/** The Shortcuts section of the Companies tab: list, add, rename, remove. `headingRef` lets App focus the heading. */
+/** The Shortcuts section of the Companies tab: list, add, edit, remove. `headingRef` lets App focus the heading. */
 export function ShortcutsSection({
   state,
   headingRef,
@@ -329,7 +330,26 @@ function ShortcutRow({
   return (
     <ManagedRow
       name={shortcut.name}
-      onRename={(name) => state.rename(shortcut.id, name)}
+      edit={{
+        verb: "Edit",
+        fields: [
+          {
+            key: "name",
+            label: "Name",
+            value: shortcut.name,
+            inputProps: { autoComplete: "off", required: true },
+            isInvalid: (message) => /name/i.test(message),
+          },
+          {
+            key: "url",
+            label: "Link",
+            value: shortcut.url,
+            inputProps: { type: "url", inputMode: "url", placeholder: "https://", autoComplete: "off", required: true },
+            isInvalid: (message) => /link/i.test(message),
+          },
+        ],
+        onSave: ({ name = "", url = "" }) => state.update(shortcut.id, { name, url }),
+      }}
       onRemove={() => state.remove(shortcut.id)}
       afterRemoveFocus={afterRemoveFocus}
     >
