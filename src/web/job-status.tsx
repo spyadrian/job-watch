@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateA
 import { canApply } from "../shared/job-lifecycle.ts";
 import type { Job, JobAction, JobStatus } from "../shared/types.ts";
 import { call } from "./api.ts";
+import { plural } from "./plural.ts";
 
 /** How long the toast stays before it disappears on its own. */
 export const TOAST_MS = 5000;
@@ -25,12 +26,13 @@ interface Toast {
   undoable: boolean;
 }
 
-/** The status a Job had before the last change, which Undo (or `u`) restores. */
-interface LastChange {
-  jobId: number;
-  status: JobStatus;
-  wasSaved: boolean;
-}
+/**
+ * The last change, which Undo (or `u`) reverts: one Job's previous status, or a
+ * Mark all as seen with the ids of the Jobs it really moved to Seen.
+ */
+type LastChange =
+  | { kind: "single"; jobId: number; status: JobStatus; wasSaved: boolean }
+  | { kind: "markAllSeen"; jobIds: number[] };
 
 export interface StatusChanges {
   act: (job: Job, action: JobAction) => void;
@@ -68,7 +70,7 @@ export function useStatusChanges(setJobs: Dispatch<SetStateAction<Job[]>>): Stat
             last.current = null;
             show("Removed: this Job is no longer published");
           } else {
-            last.current = { jobId: job.id, status: job.status, wasSaved: job.wasSaved };
+            last.current = { kind: "single", jobId: job.id, status: job.status, wasSaved: job.wasSaved };
             show(doneMessage[action], true);
           }
         })
@@ -77,19 +79,26 @@ export function useStatusChanges(setJobs: Dispatch<SetStateAction<Job[]>>): Stat
     [putJob, show],
   );
 
+  /** Replaces the given Jobs in `jobs`, keeping their place. */
+  const putJobs = useCallback(
+    (changed: Job[]) => {
+      const updated = new Map(changed.map((j) => [j.id, j]));
+      setJobs((all) => all.map((j) => updated.get(j.id) ?? j));
+    },
+    [setJobs],
+  );
+
   const markAllSeen = useCallback(
     (jobs: Job[]) => {
       call<{ jobs: Job[] }>("POST", "/api/jobs/seen", { ids: jobs.map((j) => j.id) })
         .then((res) => {
-          // Bulk changes are not undone with u; it would revert an older single change instead.
-          last.current = null;
-          const updated = new Map(res.jobs.map((j) => [j.id, j]));
-          setJobs((all) => all.map((j) => updated.get(j.id) ?? j));
-          show(res.jobs.length === 1 ? "Marked 1 Job as seen" : `Marked ${res.jobs.length} Jobs as seen`);
+          putJobs(res.jobs);
+          last.current = { kind: "markAllSeen", jobIds: res.jobs.map((j) => j.id) };
+          show(`Marked ${plural(res.jobs.length, "Job")} as seen`, true);
         })
         .catch((err: Error) => show(err.message));
     },
-    [setJobs, show],
+    [putJobs, show],
   );
 
   const undo = useCallback(() => {
@@ -97,6 +106,16 @@ export function useStatusChanges(setJobs: Dispatch<SetStateAction<Job[]>>): Stat
     if (!change) return false;
     last.current = null;
     setToast(null);
+    const failed = (err: Error) => show(`Couldn't undo: ${err.message}`);
+    if (change.kind === "markAllSeen") {
+      call<{ jobs: Job[] }>("POST", "/api/jobs/unseen", { ids: change.jobIds })
+        .then((res) => {
+          putJobs(res.jobs);
+          show(`Moved ${plural(res.jobs.length, "Job")} back to the Inbox`);
+        })
+        .catch(failed);
+      return true;
+    }
     call<{ job: Job | null; deleted?: boolean }>("POST", `/api/jobs/${change.jobId}/undo`, {
       status: change.status,
       wasSaved: change.wasSaved,
@@ -105,9 +124,9 @@ export function useStatusChanges(setJobs: Dispatch<SetStateAction<Job[]>>): Stat
         putJob(change.jobId, res.job);
         show(res.deleted ? "Removed: this Job is no longer published" : "Undone");
       })
-      .catch((err: Error) => show(`Couldn't undo: ${err.message}`));
+      .catch(failed);
     return true;
-  }, [putJob, show]);
+  }, [putJob, putJobs, show]);
 
   // Disappears on its own.
   useEffect(() => {

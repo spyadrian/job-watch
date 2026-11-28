@@ -45,12 +45,22 @@ function store(db: Database, id: number, next: Transition): Job | null {
 
 /** Mark all as seen: the given Jobs that are still Unseen become Seen, in one transaction; returns them. */
 export function markAllSeen(db: Database, ids: number[]): Job[] {
+  return actOnAll(db, ids, "unseen", "seen");
+}
+
+/** Undo Mark all as seen: the given Jobs that are still Seen go back to Unseen, in one transaction; returns them. */
+export function markAllUnseen(db: Database, ids: number[]): Job[] {
+  return actOnAll(db, ids, "seen", "unseen");
+}
+
+/** Applies `action` to each given Job currently in status `from`, in one transaction; skips the others. */
+function actOnAll(db: Database, ids: number[], from: JobStatus, action: JobAction): Job[] {
   return inTransaction(db, () =>
     [...new Set(ids)].flatMap((id) => {
       const job = getJob(db, id);
-      if (job?.status !== "unseen") return [];
-      const seen = store(db, id, transition(job, "seen"));
-      return seen ? [seen] : [];
+      if (job?.status !== from) return [];
+      const changed = store(db, id, transition(job, action));
+      return changed ? [changed] : [];
     }),
   );
 }
